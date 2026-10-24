@@ -7,7 +7,7 @@ from fastapi import APIRouter, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.api import brands, content, documents, facts, health, impacts, reviews, workflow
+from app.api import brands, content, documents, facts, guidelines, health, impacts, insights, reviews, workflow
 from app.core.config import get_settings
 from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging
@@ -42,7 +42,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="BrandPR API",
         version=__version__,
-        description="Approved brand knowledge (Phase 1), content review with evidence-backed findings, ProofGraph (Phase 2), Claim Ledger fact-change impacts (Phase 3), and content revisions, human approval and impact resolution (Phase 4).",
+        description="Approved brand knowledge (Phase 1), content review with evidence-backed findings, ProofGraph (Phase 2), Claim Ledger fact-change impacts (Phase 3), content revisions, human approval and impact resolution (Phase 4), and Guideline Lint, Policy Sandbox & Governance Intelligence (Phase 5).",
         lifespan=lifespan,
         docs_url="/api/docs" if settings.docs_enabled else None,
         redoc_url="/api/redoc" if settings.docs_enabled else None,
@@ -72,7 +72,7 @@ def create_app() -> FastAPI:
 
     register_error_handlers(app)
     api = APIRouter(prefix="/api")
-    for module in (health, brands, documents, facts, content, reviews, impacts, workflow):
+    for module in (health, brands, documents, facts, content, reviews, impacts, workflow, guidelines, insights):
         api.include_router(module.router)
     app.include_router(api)
     return app

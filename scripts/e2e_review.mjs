@@ -4,9 +4,10 @@
 // Usage: node scripts/e2e_review.mjs [baseUrl]    (default http://localhost:3000)
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const base = process.argv[2] ?? "http://localhost:3000";
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 let failures = 0;
 const check = (name, ok, extra = "") => {
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}${extra ? "  " + extra : ""}`);

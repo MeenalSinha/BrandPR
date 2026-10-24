@@ -11,10 +11,11 @@
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 
 const base = process.argv[2] ?? "http://localhost:3000";
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 let failures = 0;
 let skipped = 0;
 const check = (name, ok, extra = "") => {
@@ -115,7 +116,8 @@ try {
   check("16c. a metadata-only edit (owner) creates no impact", owner.status === 200 && (await call("GET", `/api/brands/${brand.id}/fact-change-impacts`)).json.total === 2);
 
   // 17. Controlled expiry: a second backend whose date is 10 days ahead sweeps the same database.
-  const python = process.env.E2E_BACKEND_PYTHON ?? join(root, "backend/.venv/bin/python");
+  const defaultPython = process.platform === "win32" ? join(root, "backend/.venv/Scripts/python.exe") : join(root, "backend/.venv/bin/python");
+  const python = process.env.E2E_BACKEND_PYTHON ?? defaultPython;
   const port = 8100 + Math.floor(Math.random() * 800);
   const shifted = `http://127.0.0.1:${port}`;
   try {

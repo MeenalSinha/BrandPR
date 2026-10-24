@@ -153,3 +153,43 @@ Existing responses gained fields: content items carry `asset_id`, `revision_numb
 ### Impact resolution errors (all `409` unless noted)
 
 `impact_not_open`, `wrong_brand`, `wrong_asset`, `wrong_revision`, `revision_not_approved`, `no_approval_evidence`, `review_not_completed`, `review_hash_mismatch`, `review_predates_impact`, `fact_changed_since_review`, `conflict_unresolved` (details list the findings), `stale_evidence`. `404` unknown impact or revision; `422` blank rationale.
+
+---
+
+## Phase 5: Guideline Lint, Policy Sandbox & Governance Intelligence
+
+### Guideline Rule Management & Lint
+
+| Method and path | Who | What |
+|---|---|---|
+| `GET /api/brands/{brand_id}/guidelines` | any | List guideline rules for brand. Supports `status` (`proposed`, `active`, `retired`), `category`, `limit`, `offset`. Returns items, total, and counts by status. |
+| `POST /api/brands/{brand_id}/guidelines` | actor | Create rule (201). Body: `{ title, rule_text, category?, severity?, scope?, conditions?, examples?, source_document_id?, source_page?, source_excerpt?, owner?, status? }`. Rules default to `proposed`. |
+| `POST /api/brands/{brand_id}/guidelines/extract` | actor | Extract candidate rules from an uploaded source document. Body: `{ document_id }`. Extracted rules are always created as `proposed`. |
+| `GET /api/guidelines/{rule_id}` | any | Get single guideline rule, its current status, version, and versions history. |
+| `PATCH /api/guidelines/{rule_id}` | reviewer (for status) | Edit rule fields or update status. Changing status to `active` or `retired` requires `X-Actor-Role: reviewer` (otherwise `403 reviewer_role_required`). Preserves previous versions in history. |
+| `GET /api/guidelines/{rule_id}/versions` | any | List all historical versions of a rule, newest first. |
+| `POST /api/guidelines/{rule_id}/versions` | actor | Propose a new version for a rule. Body: `{ rule_text, conditions?, examples?, source_reference?, change_reason }`. Does not mutate active rule text until approved. |
+| `POST /api/brands/{brand_id}/guideline-lint` | any | Run deterministic lint engine across brand rules. Returns `{ total_issues, issues[], summary }`. Checks vague terms, missing conditions, missing examples, and cross-rule contradictions. |
+| `GET /api/brands/{brand_id}/guideline-lint-results` | any | Fetch latest stored lint findings for a brand. |
+
+### Policy Sandbox Simulations
+
+| Method and path | Who | What |
+|---|---|---|
+| `POST /api/brands/{brand_id}/policy-simulations` | actor | Run a policy simulation (201). Body: `{ rule_id, proposed_rule: { rule_text, conditions? }, proposed_rule_text?, content_submission_ids? }`. Replays historical content under baseline vs proposed rule without altering historical records. |
+| `GET /api/brands/{brand_id}/policy-simulations` | any | List policy simulations executed for the brand with summary metrics (`total_evaluated`, `changed`, `unchanged`, `not_evaluable`). |
+| `GET /api/policy-simulations/{simulation_id}` | any | Retrieve detailed simulation report and individual content evaluated outcomes. |
+
+### Governance Intelligence
+
+| Method and path | Who | What |
+|---|---|---|
+| `GET /api/brands/{brand_id}/insights` | any | Fetch governance intelligence analytics. Query param: `period` (`7d`, `30d`, `all`, default `all`). Returns `{ overview, finding_patterns, repeated_issues, governance_recommendations, simulations_summary }`. All counts computed directly from database tables; findings joined to multiple evidence rows are deduplicated. |
+
+### Phase 5 Error Contracts
+
+- `403 reviewer_role_required`: Attempting to approve or retire a rule without reviewer role.
+- `404 rule_not_found`: Referenced rule does not exist or belongs to another brand.
+- `404 document_not_found`: Extraction source document does not exist for this brand.
+- `422 validation_error`: Missing required fields, blank rule text, or invalid category/severity enum values.
+

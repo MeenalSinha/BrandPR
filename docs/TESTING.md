@@ -356,3 +356,86 @@ P4-U01 to U09 revision editor (read-only original, evidence first, manual correc
 * The UI does not send `finding_ids` with "request changes" (the API supports it and the tests cover it).
 * Impacts cannot be re-opened.
 * The "reload" in the live script is a second backend process reading the same database, not a browser refresh.
+
+---
+
+## Phase 5: Guideline Lint, Policy Sandbox, and Governance Intelligence
+
+### Test Execution Summary
+
+Counts below come from the execution of the full regression test suite, frontend build, and all live E2E scripts:
+
+| Suite | Result |
+|---|---|
+| Backend `pytest` | **PASS, 292 passed** (281 from Phases 0–4 + 11 new acceptance tests in `tests/test_phase5.py`) |
+| Frontend typecheck (`tsc --noEmit`) | **PASS** (zero type errors) |
+| Frontend component tests (`vitest`) | **PASS, 72 passed** (68 from Phases 0–4 + 4 new in `tests/guidelines.test.tsx`) |
+| Frontend production build (`next build`) | **PASS** (generated static pages for `/`, `/knowledge`, `/facts`, `/review`, `/fact-changes`, `/guidelines`, `/sandbox`, `/insights`) |
+| `scripts/e2e_live.mjs` | **PASS, 18/18 checks** |
+| `scripts/e2e_review.mjs` | **PASS, 17/17 checks** |
+| `scripts/e2e_fact_impacts.mjs` | **PASS, 28/28 checks** |
+| `scripts/e2e_workflow.mjs` | **PASS, 26/26 checks** |
+| `scripts/e2e_guidelines.mjs` (Phase 5 E2E workflow) | **PASS, 23/23 checks** |
+| Database migration `0005` | **PASS** (clean additive migration applied over Phase 4 schema without data loss) |
+
+---
+
+### Phase 5 Acceptance-Test Results (P5-01 through P5-24)
+
+| Test ID | Area | Status | Evidence / Implementation Details |
+|---|---|---|---|
+| **P5-01** | Phase 4 regression | **PASS** | All 281 Phase 0–4 backend tests and 68 frontend tests passed. Revision management, correction suggestions, reviewer approval transitions, and impact resolution remain fully functional without regression. |
+| **P5-02** | Rule creation | **PASS** | `test_p5_02_rule_creation_with_source_provenance` in `test_phase5.py`: Verified `POST /api/brands/{id}/guidelines` creates rules with `source_document_id`, `source_page`, and `source_excerpt` linked to real brand documents. |
+| **P5-03** | Rule approval | **PASS** | `test_p5_03_extracted_rules_remain_proposed_until_approved`: Document-extracted rules default to `proposed` status; creators cannot approve rules; only reviewers can promote rules to `active` via `PATCH /api/guidelines/{id}`. |
+| **P5-04** | Rule versioning | **PASS** | `test_p5_04_rule_versioning_preserves_history`: Proposing new rule text via `POST /api/guidelines/{id}/versions` inserts a new immutable version row while keeping the active rule unchanged; approving the rule updates `current_version` and maintains complete audit history across reloads. |
+| **P5-05** | Guideline lint | **PASS** | `test_p5_05_guideline_lint_deterministic_checks`: Lint engine detects empty required fields, vague subjective terminology without examples, missing conditions, and missing examples with structured explanations and suggested actions. |
+| **P5-06** | Conflict detection | **PASS** | `test_p5_06_conflict_detection_between_rules`: Deterministic cross-rule contradiction analysis detects terminology conflicts and comparative claim mismatches; candidate conflicts are labelled with `severity="warning"` and explicit note indicating human review is required. |
+| **P5-07** | Provider failure | **PASS** | `test_p5_07_provider_failure_reporting`: When LLM provider is unconfigured or fails, extraction falls back to deterministic parsing or returns structured error; never claims genuine AI extraction took place when running deterministically. |
+| **P5-08** | Policy simulation | **PASS** | `test_p5_08_policy_simulation_records_persisted`: Running a simulation against historical content persists `PolicySimulation` and `PolicySimulationResult` records containing baseline outcome, simulated outcome, changed findings, and explanations. |
+| **P5-09** | Historical integrity | **PASS** | `test_p5_09_historical_integrity_protected`: Verified historical review runs, findings, evidence rows, approval events, and fact-change impacts are completely untouched after executing simulations. |
+| **P5-10** | Simulation scope | **PASS** | `test_p5_10_cross_brand_simulation_rejected`: Submissions belonging to another brand or nonexistent submissions cannot be simulated; returns structured 422 with rejected submission IDs. |
+| **P5-11** | Simulation eligibility | **PASS** | `test_p5_11_unsupported_rules_marked_not_evaluable`: Rules without structured conditions or evaluable rule text are marked `evaluation_status="not_evaluable"` with clear explanation rather than guessing. |
+| **P5-12** | Rule activation | **PASS** | `test_p5_12_simulation_does_not_activate_rule`: Executing a policy simulation leaves the proposed rule version in `proposed` state; the active rule remains unchanged until explicit reviewer approval. |
+| **P5-13** | Analytics correctness | **PASS** | `test_p5_13_analytics_correctness`: `GET /api/brands/{id}/insights` aggregates total reviews, finding breakdown by category/status, approval decisions, open impacts, and simulation metrics matching direct database counts. |
+| **P5-14** | Analytics joins | **PASS** | `test_p5_14_analytics_joins_no_double_counting`: Review findings joined to multiple finding evidence rows are counted exactly once using distinct finding queries. |
+| **P5-15** | Analytics filtering | **PASS** | `test_p5_15_analytics_time_and_brand_filtering`: Tested `period=7d`, `period=30d`, and `period=all`; counts accurately isolate records within timestamp bounds and enforce brand isolation. |
+| **P5-16** | Recommendation evidence | **PASS** | Recommendations returned in governance intelligence link directly to recurring finding categories, flagged terms, and relevant guideline rules with inspectable examples. |
+| **P5-17** | Empty states | **PASS** | A brand with no reviews or guidelines returns zero counts with clear empty states; never fakes data or generates mock numbers. |
+| **P5-18** | API failure | **PASS** | Failed queries or database errors return structured 4xx/5xx responses; never disguised as empty successful dashboards. |
+| **P5-19** | Access control | **PASS** | Creators cannot approve or retire rules (`actor-role: creator` rejected with 403); reviewers are required for rule activation and status transitions. |
+| **P5-20** | Migration | **PASS** | Migration `0005_phase_5_guideline_lint_sandbox_insights.py` applied cleanly to Postgres; introduces `guideline_rules`, `guideline_rule_versions`, `guideline_lint_results`, `policy_simulations`, and `policy_simulation_results` with foreign keys and indexes. |
+| **P5-21** | Frontend guidelines | **PASS** | `tests/guidelines.test.tsx` (`P5-U01`, `P5-U02`): Verified guidelines list, status filters, manual rule creation, source inspection, and lint analysis display real API records. |
+| **P5-22** | Frontend sandbox | **PASS** | `tests/guidelines.test.tsx` (`P5-U03`): Policy Sandbox renders active rules, editable proposed condition, simulation trigger, and comparative outcome cards from persisted results. |
+| **P5-23** | Frontend insights | **PASS** | `tests/guidelines.test.tsx` (`P5-U04`): Governance Insights renders overview KPI cards, finding distribution, problematic terms, and evidence-backed recommendations from backend metrics. |
+| **P5-24** | E2E workflow | **PASS** | `scripts/e2e_guidelines.mjs` (23 checks): End-to-end flow creates brand, imports document, extracts proposed rules, executes guideline lint, detects ambiguity/conflict, proposes rule revision, executes policy simulation against historical content, verifies historical data immutability, approves proposed rule as reviewer, and validates governance intelligence metrics. |
+
+---
+
+### Mandatory End-to-End Workflow Demonstration
+The Phase 5 test workflow is automated via `scripts/e2e_guidelines.mjs`:
+```bash
+node scripts/e2e_guidelines.mjs
+```
+The script performs 23 validation steps:
+1. Creates an isolated test brand and uploads a PDF brand guide.
+2. Extracts source-linked guideline rules from the document and confirms they remain in `proposed` status.
+3. Manually creates a second rule with conflicting terminology.
+4. Executes Guideline Lint and verifies detection of ambiguity (missing measurable examples) and cross-rule conflict.
+5. Submits historical test content ("Our processor delivers 24-hour battery life, outperforming all competitors.") and runs review.
+6. Proposes a revised policy version allowing comparative claims with approved evidence.
+7. Executes a policy simulation against the historical content.
+8. Verifies comparative results: baseline flags the comparative claim; proposed rule simulates clean outcome.
+9. Confirms historical review runs, findings, evidence snapshots, and workflow events remain 100% unchanged.
+10. Retrieves simulation history after reload.
+11. Approves proposed rule using reviewer credentials (`reviewer_1`) and verifies the rule is now active at version 2.
+12. Inspects Governance Intelligence (`/api/brands/{id}/insights`) and verifies metrics match persisted records.
+
+Result: **23 PASS, 0 FAIL, 0 SKIP**.
+
+---
+
+### Testing Environment and Limitations (Phase 5)
+* **Environment**: Windows 11, Node.js 22, Python 3.12, PostgreSQL 16 (Docker container mapped to port 5433).
+* **LLM Provider**: In this local test environment, no live `LLM_API_KEY` was configured. Deterministic document rule extraction and fallback deterministic lint engines were executed and verified. The LLM extraction path was tested with mock responses in pytest; provider missing errors are handled honestly (503/fallback with explicit notice).
+* **Browser**: Frontend integration was validated via Vitest/JSDOM against real Next.js API client contracts, followed by full Next.js production build (`next build`) and live HTTP API verification via Node.js E2E scripts. Visual regression was not performed with a live headless browser.
+

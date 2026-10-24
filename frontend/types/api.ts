@@ -602,3 +602,138 @@ export interface ImpactHistory {
   revisions: Revision[];
   events: WorkflowEvent[];
 }
+
+// Phase 5: Guideline Lint, Policy Sandbox & Governance Intelligence
+
+export type GuidelineRuleStatus = "proposed" | "active" | "retired";
+export type GuidelineRuleCategory = "terminology" | "claim" | "tone" | "visual" | "compliance" | "general";
+export type GuidelineRuleSeverity = "low" | "medium" | "high";
+
+export interface GuidelineRule {
+  id: string;
+  brand_id: string;
+  title: string;
+  description: string | null;
+  rule_text: string;
+  category: GuidelineRuleCategory;
+  severity: GuidelineRuleSeverity;
+  scope: string | null;
+  conditions: Record<string, unknown> | null;
+  status: GuidelineRuleStatus;
+  source_document_id: string | null;
+  source_page: number | null;
+  source_excerpt: string | null;
+  owner: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  current_version: number;
+}
+
+export interface GuidelineRuleVersion {
+  id: string;
+  rule_id: string;
+  version_number: number;
+  rule_text: string;
+  conditions: Record<string, unknown> | null;
+  examples: Record<string, unknown> | null;
+  source_reference: string | null;
+  change_reason: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface GuidelineLintIssue {
+  id: string;
+  rule_id: string;
+  issue_category: string;
+  explanation: string;
+  conflicting_rule_id: string | null;
+  source_passage: string | null;
+  suggested_action: string;
+  severity: string;
+  requires_human_assessment: boolean;
+  detected_at: string;
+}
+
+export interface PolicySimulation {
+  id: string;
+  brand_id: string;
+  rule_id: string;
+  base_rule_version: number;
+  proposed_rule_version: number;
+  status: string;
+  summary: {
+    total_evaluated: number;
+    changed: number;
+    unchanged: number;
+    not_evaluable: number;
+  };
+  created_by: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface PolicySimulationResult {
+  id: string;
+  simulation_id: string;
+  content_submission_id: string;
+  content_title: string;
+  historical_review_run_id: string | null;
+  baseline_outcome: string;
+  simulated_outcome: string;
+  outcome_changed: boolean;
+  evaluation_status: "evaluated" | "not_evaluable";
+  changed_findings: any[] | null;
+  explanation: string | null;
+}
+
+export interface PolicySimulationDetail extends PolicySimulation {
+  results: PolicySimulationResult[];
+}
+
+export interface GovernanceInsights {
+  brand_id: string;
+  period: "7d" | "30d" | "all";
+  overview: {
+    completed_reviews: number;
+    total_findings: number;
+    open_impacts: number;
+    decisions: {
+      approved: number;
+      changes_requested: number;
+      rejected: number;
+    };
+    rules_summary: {
+      active: number;
+      proposed: number;
+      retired: number;
+      total: number;
+    };
+  };
+  finding_patterns: {
+    by_status: Record<string, number>;
+    by_severity: Record<string, number>;
+    by_category: Record<string, number>;
+    top_problematic_terms: { term: string; count: number; samples: string[] }[];
+  };
+  repeated_issues: {
+    term: string;
+    occurrences: number;
+    representative_claims: string[];
+  }[];
+  governance_recommendations: {
+    category: string;
+    pattern: string;
+    count: number;
+    relevant_rule_ids?: string[];
+    representative_findings: string[];
+    suggested_action: string;
+    requires_human_assessment: boolean;
+  }[];
+  simulations_summary: {
+    total_simulations: number;
+    total_evaluated_content: number;
+    total_changed_outcomes: number;
+  };
+}

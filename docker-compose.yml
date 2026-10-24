@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-brandpr}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-brandpr_dev_password}
       POSTGRES_DB: ${POSTGRES_DB:-brandpr}
-    ports: ["5432:5432"]
+    ports: ["${POSTGRES_PORT:-5432}:5432"]
     volumes: ["pgdata:/var/lib/postgresql/data"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-brandpr} -d ${POSTGRES_DB:-brandpr}"]

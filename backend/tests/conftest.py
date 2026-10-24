@@ -3,6 +3,11 @@ import os
 import tempfile
 from datetime import date, timedelta
 
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
 # Environment must be set before the application modules are imported.
 os.environ["APP_ENV"] = "test"
 os.environ["DATABASE_URL"] = os.environ.get(
@@ -25,7 +30,7 @@ from sqlalchemy import create_engine, text  # noqa: E402
 from app.main import create_app  # noqa: E402
 
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TABLES = "fact_change_impact_resolutions, risk_overrides, revision_corrections, workflow_events, content_assets, fact_change_impact_findings, fact_change_impacts, finding_evidence, review_findings, review_runs, content_submissions, fact_revisions, approved_facts, document_sections, source_documents, brands"
+TABLES = "policy_simulation_results, policy_simulations, guideline_lint_results, guideline_rule_versions, guideline_rules, fact_change_impact_resolutions, risk_overrides, revision_corrections, workflow_events, content_assets, fact_change_impact_findings, fact_change_impacts, finding_evidence, review_findings, review_runs, content_submissions, fact_revisions, approved_facts, document_sections, source_documents, brands"
 
 
 def alembic_config() -> Config:

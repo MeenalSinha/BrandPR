@@ -14,10 +14,11 @@
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 
 const base = process.argv[2] ?? "http://localhost:3000";
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 let failures = 0;
 let skipped = 0;
 const check = (name, ok, extra = "") => {
@@ -129,7 +130,8 @@ try {
   check("16. revision and decision history lists every event in order", wf.events.filter((e) => e.revision_number === 2).map((e) => e.action).join(",") === "created,submitted,approved" && (await call("GET", `/api/content/${A.content.id}/revisions`)).json.items.map((r) => r.revision_number).join(",") === "1,2,3");
 
   // 17-18. Reload: read everything again through a second backend process.
-  const python = process.env.E2E_BACKEND_PYTHON ?? join(root, "backend/.venv/bin/python");
+  const defaultPython = process.platform === "win32" ? join(root, "backend/.venv/Scripts/python.exe") : join(root, "backend/.venv/bin/python");
+  const python = process.env.E2E_BACKEND_PYTHON ?? defaultPython;
   const port = 8100 + Math.floor(Math.random() * 400);
   const origin2 = `http://127.0.0.1:${port}`;
   try {

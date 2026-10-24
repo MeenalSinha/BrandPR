@@ -13,6 +13,9 @@ const NAV = [
   { href: "/facts", label: "Approved facts", hint: "Claim ledger" },
   { href: "/review", label: "Review content", hint: "Findings, revisions, approval" },
   { href: "/fact-changes", label: "Fact changes", hint: "Affected content and resolution" },
+  { href: "/guidelines", label: "Guidelines", hint: "Rules & lint checks" },
+  { href: "/sandbox", label: "Policy sandbox", hint: "Simulate proposed rules" },
+  { href: "/insights", label: "Governance insights", hint: "Analytics & recommendations" },
 ];
 
 function NewBrandDialog({ onClose }: { onClose: () => void }) {

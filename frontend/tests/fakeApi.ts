@@ -3,6 +3,7 @@ import { vi } from "vitest";
 import type {
   Brand, ContentItem, DocumentSection, Evidence, Fact, Finding, Impact, ImpactContentBrief, ImpactDetail, ImpactResolution, ReviewRun, SourceDocument,
   Suggestion, WorkflowEvent, WorkflowStatus,
+  GuidelineRule, GuidelineRuleVersion, GuidelineLintIssue, PolicySimulation, PolicySimulationDetail, GovernanceInsights,
 } from "@/types/api";
 
 /** In-memory stand-in for the BrandPR API that mirrors the real response shapes and error format. */
@@ -24,8 +25,51 @@ export class FakeApi {
   events: WorkflowEvent[] = [];
   /** What the pretend backend answers to suggest-correction; null means no AI provider is configured (503). */
   suggestResponder: ((finding: Finding) => Partial<Suggestion>) | null = null;
+  guidelines: GuidelineRule[] = [];
+  guidelineVersions: Record<string, GuidelineRuleVersion[]> = {};
+  lintIssues: Record<string, GuidelineLintIssue[]> = {};
+  simulations: PolicySimulationDetail[] = [];
   private n = 1;
   id = () => `00000000-0000-4000-8000-${String(this.n++).padStart(12, "0")}`;
+
+  addGuideline(brandId: string, over: Partial<GuidelineRule> = {}): GuidelineRule {
+    const id = this.id();
+    const rule: GuidelineRule = {
+      id,
+      brand_id: brandId,
+      title: "Sample Guideline Rule",
+      description: null,
+      rule_text: "Comparative claims must not be used without verified benchmark evidence.",
+      category: "claim",
+      severity: "medium",
+      scope: "all marketing campaigns",
+      conditions: null,
+      status: "active",
+      source_document_id: null,
+      source_page: null,
+      source_excerpt: null,
+      owner: "Brand Governance",
+      created_by: "Admin",
+      created_at: "2026-10-24T10:00:00Z",
+      updated_at: "2026-10-24T10:00:00Z",
+      current_version: 1,
+      ...over,
+    };
+    this.guidelines.push(rule);
+    this.guidelineVersions[id] = [{
+      id: this.id(),
+      rule_id: id,
+      version_number: 1,
+      rule_text: rule.rule_text,
+      conditions: rule.conditions,
+      examples: null,
+      source_reference: null,
+      change_reason: "Initial version",
+      created_by: rule.created_by,
+      created_at: rule.created_at,
+    }];
+    return rule;
+  }
 
   /** The exact-revision brief the backend returns for an impact's content. */
   contentBrief(title: string, over: Partial<ImpactContentBrief> = {}): ImpactContentBrief {
@@ -440,6 +484,175 @@ export class FakeApi {
     if ((m = p.match(/^\/reviews\/([^/]+)\/findings$/))) {
       const items = this.findingsByRun[m[1]] ?? [];
       return this.json(200, { items, total: items.length, limit: 200, offset: 0 });
+    }
+
+    // Phase 5 Guidelines
+    if ((m = p.match(/^\/brands\/([^/]+)\/guidelines$/))) {
+      if (method === "GET") {
+        const st = url.searchParams.get("status");
+        const items = this.guidelines.filter((g) => g.brand_id === m![1] && (!st || g.status === st));
+        return this.json(200, { items, total: items.length, limit: 200, offset: 0 });
+      }
+      const rule = this.addGuideline(m[1], {
+        title: body.title,
+        rule_text: body.rule_text,
+        category: body.category ?? "general",
+        severity: body.severity ?? "medium",
+        scope: body.scope ?? null,
+        conditions: body.conditions ?? null,
+        status: body.status ?? "proposed",
+        source_document_id: body.source_document_id ?? null,
+        source_excerpt: body.source_excerpt ?? null,
+        owner: body.owner ?? null,
+      });
+      return this.json(201, rule);
+    }
+    if ((m = p.match(/^\/guidelines\/([^/]+)$/))) {
+      const rule = this.guidelines.find((g) => g.id === m![1]);
+      if (!rule) return this.error(404, "not_found", "Rule not found.");
+      if (method === "PATCH") {
+        if (body.status && role !== "reviewer") return this.error(403, "reviewer_role_required", "Only reviewers can change rule status.");
+        Object.assign(rule, body);
+        return this.json(200, rule);
+      }
+      return this.json(200, rule);
+    }
+    if ((m = p.match(/^\/brands\/([^/]+)\/guidelines\/extract$/))) {
+      const rule = this.addGuideline(m[1], {
+        title: "Extracted Brand Guideline",
+        rule_text: "Brand claims must strictly align with technical specifications.",
+        status: "proposed",
+        source_document_id: body.source_document_id,
+      });
+      return this.json(200, { extracted_count: 1, proposed_rules: [rule] });
+    }
+    if ((m = p.match(/^\/guidelines\/([^/]+)\/versions$/))) {
+      if (method === "GET") {
+        return this.json(200, this.guidelineVersions[m[1]] ?? []);
+      }
+      const rule = this.guidelines.find((g) => g.id === m![1])!;
+      const vNum = (this.guidelineVersions[rule.id]?.length ?? 0) + 1;
+      const v: GuidelineRuleVersion = {
+        id: this.id(),
+        rule_id: rule.id,
+        version_number: vNum,
+        rule_text: body.rule_text,
+        conditions: body.conditions ?? null,
+        examples: body.examples ?? null,
+        source_reference: body.source_reference ?? null,
+        change_reason: body.change_reason,
+        created_by: name ?? null,
+        created_at: new Date().toISOString(),
+      };
+      this.guidelineVersions[rule.id] = [v, ...(this.guidelineVersions[rule.id] ?? [])];
+      rule.rule_text = body.rule_text;
+      rule.current_version = vNum;
+      return this.json(201, v);
+    }
+    if ((m = p.match(/^\/brands\/([^/]+)\/guideline-lint$/))) {
+      const issues: GuidelineLintIssue[] = (this.guidelines.filter((g) => g.brand_id === m![1])).map((g) => ({
+        id: this.id(),
+        rule_id: g.id,
+        issue_category: "missing_condition",
+        explanation: `Rule '${g.title}' lacks testable conditions.`,
+        conflicting_rule_id: null,
+        source_passage: g.source_excerpt,
+        suggested_action: "Add explicit condition or criteria.",
+        severity: "medium",
+        requires_human_assessment: true,
+        detected_at: new Date().toISOString(),
+      }));
+      this.lintIssues[m[1]] = issues;
+      return this.json(200, { total_issues: issues.length, issues });
+    }
+    if ((m = p.match(/^\/brands\/([^/]+)\/guideline-lint-results$/))) {
+      const items = this.lintIssues[m[1]] ?? [];
+      return this.json(200, { items, total: items.length, limit: 200, offset: 0 });
+    }
+    if ((m = p.match(/^\/brands\/([^/]+)\/policy-simulations$/))) {
+      if (method === "GET") {
+        const items = this.simulations.filter((s) => s.brand_id === m![1]);
+        return this.json(200, { items, total: items.length, limit: 100, offset: 0 });
+      }
+      const simId = this.id();
+      const rule = this.guidelines.find((g) => g.id === body.rule_id);
+      const detail: PolicySimulationDetail = {
+        id: simId,
+        brand_id: m[1],
+        rule_id: body.rule_id,
+        base_rule_version: rule?.current_version ?? 1,
+        proposed_rule_version: (rule?.current_version ?? 1) + 1,
+        status: "completed",
+        summary: {
+          total_evaluated: 1,
+          changed: 1,
+          unchanged: 0,
+          not_evaluable: 0,
+        },
+        created_by: name ?? null,
+        created_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+        results: [
+          {
+            id: this.id(),
+            simulation_id: simId,
+            content_submission_id: this.id(),
+            content_title: "Campaign Ad Sample",
+            historical_review_run_id: null,
+            baseline_outcome: "conflicting",
+            simulated_outcome: "supported",
+            outcome_changed: true,
+            evaluation_status: "evaluated",
+            changed_findings: null,
+            explanation: "Proposed rule permits comparative claim with approved specs.",
+          },
+        ],
+      };
+      this.simulations.unshift(detail);
+      return this.json(201, detail);
+    }
+    if ((m = p.match(/^\/policy-simulations\/([^/]+)$/))) {
+      const sim = this.simulations.find((s) => s.id === m![1]);
+      return sim ? this.json(200, sim) : this.error(404, "not_found", "Simulation not found.");
+    }
+    if ((m = p.match(/^\/brands\/([^/]+)\/insights$/))) {
+      const brandId = m[1];
+      const insights: GovernanceInsights = {
+        brand_id: brandId,
+        period: "all",
+        overview: {
+          completed_reviews: 2,
+          total_findings: 3,
+          open_impacts: 1,
+          decisions: { approved: 1, changes_requested: 1, rejected: 0 },
+          rules_summary: { active: 1, proposed: 1, retired: 0, total: 2 },
+        },
+        finding_patterns: {
+          by_status: { supported: 1, conflicting: 2 },
+          by_severity: { medium: 2, high: 1 },
+          by_category: { product_spec: 2, terminology: 1 },
+          top_problematic_terms: [{ term: "battery", count: 2, samples: ["Runs 24 hours continuously"] }],
+        },
+        repeated_issues: [
+          { term: "battery", occurrences: 2, representative_claims: ["Runs 24 hours continuously"] },
+        ],
+        governance_recommendations: [
+          {
+            category: "terminology",
+            pattern: "Frequent flags for 'battery' (2 times)",
+            count: 2,
+            representative_findings: ["Battery life claim conflict"],
+            suggested_action: "Establish clear battery guideline.",
+            requires_human_assessment: true,
+          },
+        ],
+        simulations_summary: {
+          total_simulations: this.simulations.filter((s) => s.brand_id === brandId).length,
+          total_evaluated_content: 1,
+          total_changed_outcomes: 1,
+        },
+      };
+      return this.json(200, insights);
     }
     return this.error(404, "not_found", `No fake route for ${method} ${p}`);
   };

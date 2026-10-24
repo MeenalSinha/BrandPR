@@ -4,6 +4,7 @@ import type {
   ContentCreateInput, ContentItem, ContentSummary, Finding, ReviewRun,
   Impact, ImpactDetail, ImpactHistory, ImpactResolution, ImpactSummary, ActorRole,
   DecisionInput, FindingDetail, RevisionCreateInput, RevisionHistory, Suggestion, Workflow,
+  GuidelineRule, GuidelineRuleVersion, GuidelineLintIssue, PolicySimulation, PolicySimulationDetail, GovernanceInsights,
 } from "@/types/api";
 
 // Same-origin by default: Next.js proxies /api/* to the backend. Override only with a public, non-secret URL.
@@ -122,6 +123,68 @@ export const api = {
     request<ImpactResolution>(`/fact-change-impacts/${id}/dismiss`, { ...json("POST", { rationale }), headers: actorHeaders() }),
   impactHistory: (id: string) => request<ImpactHistory>(`/fact-change-impacts/${id}/history`),
   reviewFindings: (id: string) => request<Page<Finding>>(`/reviews/${id}/findings?limit=200`),
+
+  // Phase 5: Guidelines, Policy Sandbox & Governance Intelligence
+  listGuidelines: (brandId: string, status?: string) =>
+    request<Page<GuidelineRule>>(`/brands/${brandId}/guidelines${qs({ status, limit: 200 })}`),
+  getGuideline: (id: string) => request<GuidelineRule>(`/guidelines/${id}`),
+  createGuideline: (brandId: string, data: {
+    title: string;
+    rule_text: string;
+    category?: string;
+    severity?: string;
+    scope?: string | null;
+    conditions?: Record<string, unknown> | null;
+    status?: string;
+    source_document_id?: string | null;
+    source_page?: number | null;
+    source_excerpt?: string | null;
+    owner?: string | null;
+  }) => request<GuidelineRule>(`/brands/${brandId}/guidelines`, { ...json("POST", data), headers: actorHeaders() }),
+  updateGuideline: (id: string, data: {
+    title?: string;
+    rule_text?: string;
+    status?: string;
+    category?: string;
+    severity?: string;
+    scope?: string | null;
+    conditions?: Record<string, unknown> | null;
+    source_excerpt?: string | null;
+    owner?: string | null;
+    change_reason?: string | null;
+    expected_version?: number | null;
+  }) => request<GuidelineRule>(`/guidelines/${id}`, { ...json("PATCH", data), headers: actorHeaders() }),
+  extractGuidelines: (brandId: string, data: { source_document_id: string }) =>
+    request<{ extracted_count: number; proposed_rules: GuidelineRule[] }>(
+      `/brands/${brandId}/guidelines/extract`,
+      { ...json("POST", data), headers: actorHeaders() },
+    ),
+  getGuidelineVersions: (id: string) => request<GuidelineRuleVersion[]>(`/guidelines/${id}/versions`),
+  proposeGuidelineVersion: (id: string, data: {
+    rule_text: string;
+    conditions?: Record<string, unknown> | null;
+    examples?: Record<string, unknown> | null;
+    source_reference?: string | null;
+    change_reason: string;
+  }) => request<GuidelineRuleVersion>(`/guidelines/${id}/versions`, { ...json("POST", data), headers: actorHeaders() }),
+  runGuidelineLint: (brandId: string) =>
+    request<{ total_issues: number; issues: GuidelineLintIssue[] }>(
+      `/brands/${brandId}/guideline-lint`,
+      { method: "POST", headers: actorHeaders() },
+    ),
+  getGuidelineLintResults: (brandId: string) =>
+    request<Page<GuidelineLintIssue>>(`/brands/${brandId}/guideline-lint-results?limit=200`),
+  listPolicySimulations: (brandId: string) =>
+    request<Page<PolicySimulation>>(`/brands/${brandId}/policy-simulations?limit=100`),
+  createPolicySimulation: (brandId: string, data: {
+    rule_id: string;
+    proposed_rule_text: string;
+    proposed_conditions?: Record<string, unknown> | null;
+    sample_content_ids?: string[] | null;
+  }) => request<PolicySimulationDetail>(`/brands/${brandId}/policy-simulations`, { ...json("POST", data), headers: actorHeaders() }),
+  getPolicySimulation: (id: string) => request<PolicySimulationDetail>(`/policy-simulations/${id}`),
+  getGovernanceInsights: (brandId: string, period = "all") =>
+    request<GovernanceInsights>(`/brands/${brandId}/insights${qs({ period })}`),
 };
 
 export function errorMessage(e: unknown): string {

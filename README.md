@@ -189,16 +189,53 @@ node scripts/e2e_workflow.mjs                         # live end-to-end run of t
 * Suggested corrections were exercised with a controlled test provider, not a live model.
 * No diff beyond the highlighted changed passage and the side-by-side text.
 
+## Guideline Lint, Policy Sandbox & Governance Intelligence (Phase 5)
+
+Phase 5 elevates BrandPR from a content review tool into a proactive governance intelligence system. It introduces source-linked guideline rule management, rule linting, a policy simulation sandbox, and evidence-backed governance analytics.
+
+### Guideline Rule Management & Lint (`/guidelines`)
+
+* **Rule Extraction**: Brand administrators can extract candidate rules directly from processed source documents. Every extracted rule is created in `proposed` status and **never automatically activated**. An authorized reviewer must explicitly approve it.
+* **Inspectable Provenance**: Every guideline rule is source-linked with document citations, page numbers, and direct source excerpts, or explicitly marked as manually authored.
+* **Deterministic Lint Engine**: Inspects active and proposed rules to detect weaknesses before content violations occur:
+  - Vague instructions without measurable criteria or approved examples (e.g. "market-leading", "best-in-class", "innovative").
+  - Unclear or missing scope.
+  - Missing executable conditions when conditional phrasing is used ("when", "unless", "except").
+  - Missing concrete positive/negative examples for claim and terminology rules.
+  - Cross-rule terminology contradictions (one rule requires what another prohibits).
+  - Cross-rule comparative claim contradictions (conflicting comparative claim permissions across overlapping rules).
+* **Rule Versioning**: When an active rule is edited, the previous version is preserved in `guideline_rule_versions` with who changed it and why. Historical review runs continue to reflect the policy that was active when they were reviewed.
+
+### Policy Sandbox (`/sandbox`)
+
+* **Replay Without Historical Mutation**: Brand managers can test proposed rule changes against real historical content submissions before activation.
+* **Comparative Simulation**: Evaluates content under the baseline active rule and the proposed rule, displaying side-by-side verdicts (`supported`, `conflicting`, `unsupported`, or `not_evaluable`).
+* **Outcome Differentiation**: Quantifies total evaluated submissions, outcomes changed, unchanged, and not-evaluable results with detailed explanations.
+* **Strict Historical Data-Integrity Guarantee**: Running a policy simulation **never modifies** past review runs, findings, evidence snapshots, content revisions, approval decisions, or fact-change impacts, and does not automatically activate the proposed rule.
+
+### Governance Intelligence (`/insights`)
+
+* **100% Persisted Records**: All metrics and counts are computed directly from real database records (`ContentSubmission`, `ReviewRun`, `ReviewFinding`, `FactChangeImpact`, `WorkflowEvent`, `GuidelineLintResult`, `PolicySimulation`). There are no mock fixtures or hardcoded constants.
+* **Time Filtering**: Filter review history and decisions by `7d`, `30d`, or `all`.
+* **Deduplicated Analytics**: Database queries group findings strictly by review run and finding ID, ensuring findings joined to multiple evidence records are never double-counted.
+* **Actionable Recommendations**: Evidence-backed recommendations that correlate observed review bottlenecks (e.g. repeated unapproved terms, active rules with unresolved lint issues, open fact impacts, high-risk finding clusters) with concrete suggested governance actions, explicitly marked as requiring human assessment.
+
+### Run Phase 5
+
+```bash
+cd backend && .venv/bin/alembic upgrade head          # applies migration 0005 (guidelines, simulations, insights)
+node scripts/e2e_guidelines.mjs                       # live end-to-end check of Phase 5 workflow (backend and frontend running)
+./scripts/verify.sh                                   # all automated checks across all phases
+```
+
 ## Key behaviours
 
-* Uploading a document never approves anything. New facts are `proposed`; approval is an explicit action recorded with who and when.
+* Uploading a document never approves anything. New facts and rules are `proposed`; approval is an explicit action recorded with who and when.
 * Editing the wording, value, qualifications or source of an approved fact returns it to `proposed`.
 * Expiry is evaluated every time a fact is read, so an expired fact is never shown as current. A missing expiry date is flagged, not assumed to mean forever.
-* Every fact cites a document (with a page and a checked excerpt) or states a manual source. Cross-brand citations are rejected by the API and by a database constraint.
-* Documents cited by facts cannot be deleted; archive them. Failed processing leaves a clearly failed record, never a success.
+* Every fact and rule cites a document (with a page and a checked excerpt) or states a manual source. Cross-brand citations are rejected by the API and by database constraints.
+* Documents cited by facts or rules cannot be deleted; archive them. Failed processing leaves a clearly failed record, never a success.
+* Policy simulations and guideline lint checks are strictly isolated from historical review and approval records.
 
-See `docs/DATA_MODEL.md` for every rule and `docs/API.md` for the endpoints.
+See `docs/DATA_MODEL.md` for every table schema, `docs/API.md` for the endpoints, and `docs/TESTING.md` for test coverage.
 
-## Scope
-
-Not included by design: sign-in and real user accounts (Phase 4 uses a labelled demo identity), advanced Guideline Lint, analytics, vision models, multi-agent orchestration, publishing integrations, authentication. The "Your name" field in the sidebar is a placeholder recorded with changes until sign-in exists.
