@@ -737,3 +737,137 @@ export interface GovernanceInsights {
     total_changed_outcomes: number;
   };
 }
+
+// --------------------------------------------------------------------- Phase 6 Types
+export type CampaignStatus = "draft" | "in_review" | "blocked" | "needs_review" | "ready_for_release" | "released" | "archived";
+
+export type ChannelRole = "landing_page" | "advertisement" | "email" | "social_post" | "product_description" | "press_release" | "other";
+
+export interface CampaignAsset {
+  id: string;
+  campaign_id: string;
+  brand_id: string;
+  asset_id: string;
+  asset_title?: string | null;
+  selected_submission_id: string;
+  revision_number: number;
+  content_hash?: string | null;
+  workflow_status: WorkflowStatus;
+  channel_role: ChannelRole;
+  display_order: number;
+  notes?: string | null;
+  added_by?: string | null;
+  added_at: string;
+}
+
+export interface CampaignAuditFinding {
+  id: string;
+  audit_id: string;
+  asset_id: string | null;
+  asset_title?: string | null;
+  submission_id: string | null;
+  revision_number: number | null;
+  content_hash: string | null;
+  finding_type: string;
+  severity: "hard_blocker" | "warning" | "info";
+  confidence: "confirmed" | "potential" | "uncertain" | "not_evaluable";
+  claim_text: string | null;
+  explanation: string;
+  recommended_action: string;
+  requires_human_review: boolean;
+  related_asset_id?: string | null;
+  related_asset_title?: string | null;
+  related_submission_id?: string | null;
+  related_fact_id?: string | null;
+  related_fact_version?: number | null;
+  related_rule_id?: string | null;
+  related_rule_version?: number | null;
+  related_impact_id?: string | null;
+  related_review_finding_id?: string | null;
+  source_document_id?: string | null;
+  source_page?: number | null;
+  source_excerpt?: string | null;
+  created_at: string;
+}
+
+export interface CampaignAudit {
+  id: string;
+  campaign_id: string;
+  audit_number: number;
+  status: "completed" | "failed";
+  readiness_outcome: "blocked" | "needs_review" | "ready_for_release";
+  is_stale: boolean;
+  stale_reason: string | null;
+  asset_count: number;
+  blocker_count: number;
+  warning_count: number;
+  review_required_count: number;
+  passed_checks_count: number;
+  summary: Record<string, any> | null;
+  created_by: string | null;
+  created_at: string;
+  findings: CampaignAuditFinding[];
+}
+
+export interface Campaign {
+  id: string;
+  brand_id: string;
+  title: string;
+  description: string | null;
+
+  external_reference: string | null;
+  owner: string | null;
+  status: CampaignStatus;
+  release_notes: string | null;
+  released_at: string | null;
+  released_by: string | null;
+  created_at: string;
+  updated_at: string;
+  asset_count: number;
+  latest_audit_id: string | null;
+  latest_readiness: "blocked" | "needs_review" | "ready_for_release" | null;
+  latest_audit_stale: boolean;
+  blocker_count: number;
+  warning_count: number;
+  assets: CampaignAsset[];
+}
+
+export interface AuditComparison {
+  audit_id: string;
+  previous_audit_id: string;
+  new_findings: CampaignAuditFinding[];
+  persistent_findings: CampaignAuditFinding[];
+  resolved_findings: CampaignAuditFinding[];
+  unevaluable_findings: CampaignAuditFinding[];
+  summary: {
+    new_count: number;
+    persistent_count: number;
+    resolved_count: number;
+    unevaluable_count: number;
+  };
+}
+
+export interface ReleaseEvaluation {
+  campaign_id: string;
+  status: string;
+  is_stale: boolean;
+  can_release: boolean;
+  blocker_count: number;
+  warning_count: number;
+  review_required_count: number;
+  blockers: string[];
+  audit_id: string | null;
+  readiness_outcome: string | null;
+}
+
+export interface CampaignReleaseDecision {
+  decision_id: string;
+  campaign_id: string;
+  audit_id: string;
+  decision: string;
+  actor_name: string;
+  actor_role: string;
+  release_notes: string | null;
+  released_at: string;
+}
+

@@ -434,7 +434,88 @@ Result: **23 PASS, 0 FAIL, 0 SKIP**.
 
 ---
 
-### Testing Environment and Limitations (Phase 5)
+### Phase 6 Acceptance-Test Results (P6-01 through P6-40)
+
+| Test ID | Area | Status | Evidence / Implementation Details |
+|---|---|---|---|
+| **P6-01** | Campaign creation | **PASS** | `test_p6_01_create_campaign` in `test_phase6.py`: Verified `POST /api/brands/{id}/campaigns` creates campaigns with `draft` status, UUID, and timestamps. |
+| **P6-02** | Campaign validation | **PASS** | `test_p6_02_reject_invalid_brand_or_malformed`: Non-existent brand yields 404; blank or whitespace-only title rejected with 422. |
+| **P6-03** | Asset membership | **PASS** | `test_p6_03_add_multiple_assets`: Successfully adds multiple content assets with distinct channel roles (`landing_page`, `email`, `social_post`). |
+| **P6-04** | Cross-brand isolation | **PASS** | `test_p6_04_reject_cross_brand_asset`: Attempting to add an asset from Brand B to Brand A's campaign is rejected with 422. |
+| **P6-05** | Duplicate membership | **PASS** | `test_p6_05_prevent_duplicate_membership`: Adding the same asset with the exact same revision returns 409 conflict. |
+| **P6-06** | Revision identity | **PASS** | `test_p6_06_preserve_revision_identity`: Adding an asset binds the exact specified `submission_id` and revision number. |
+| **P6-07** | Non-destructive removal | **PASS** | `test_p6_07_removing_asset_does_not_delete_content`: Deleting membership via `DELETE .../assets/{id}` removes association but leaves underlying content, reviews, and revisions intact. |
+| **P6-08** | Valid audit execution | **PASS** | `test_p6_08_audit_campaign_valid_evidence`: Campaign with valid, reviewed, approved assets audits cleanly with zero blockers. |
+| **P6-09** | Contradiction detection | **PASS** | `test_p6_09_detect_cross_asset_contradiction`: Detects genuine contradiction when two campaign assets claim conflicting numbers/values for the same approved fact. |
+| **P6-10** | No false contradictions | **PASS** | `test_p6_10_no_contradiction_without_evidence`: Assets mentioning different facts or compatible claims are not reported as conflicting. |
+| **P6-11** | Outdated facts & impacts | **PASS** | `test_p6_11_outdated_facts_and_unresolved_impacts`: Detects when an asset relies on an expired fact or has an open `FactChangeImpact`. |
+| **P6-12** | Review gaps | **PASS** | `test_p6_12_detect_missing_failed_stale_reviews`: Assets with no review run, failed review run, or review predating a revision edit are flagged as blockers. |
+| **P6-13** | Human review items | **PASS** | `test_p6_13_identify_human_review_findings`: Findings marked `requires_human_review` are surfaced in audit summary and findings list. |
+| **P6-14** | Evidence provenance | **PASS** | `test_p6_14_verify_evidence_links`: Findings include source document ID, page, excerpt, fact ID/version, and content submission ID. |
+| **P6-15** | Audit immutability | **PASS** | `test_p6_15_audit_snapshots_preserved`: Running a subsequent audit creates a new snapshot with incremented `audit_number`; prior snapshots remain unchanged. |
+| **P6-16** | Audit comparison | **PASS** | `test_p6_16_compare_consecutive_audits`: `GET .../comparison/{prev_id}` accurately classifies `new`, `resolved`, `persistent`, and `unevaluable` findings. |
+| **P6-17** | Blocker evaluation | **PASS** | `test_p6_17_campaign_with_blocker_is_blocked`: Audit with confirmed contradictions or open impacts evaluates to `blocked`. |
+| **P6-18** | Needs review evaluation | **PASS** | `test_p6_18_campaign_with_human_review_needs_review`: Audit with zero hard blockers but pending human-review items evaluates to `needs_review`. |
+| **P6-19** | Ready for release | **PASS** | `test_p6_19_clean_campaign_ready_for_release`: Campaign with all checks passed and zero blockers/review items evaluates to `ready_for_release`. |
+| **P6-20** | Guarded release sign-off | **PASS** | `test_p6_20_release_prevented_while_blocked_or_unapproved`: Releasing while blockers exist or while individual assets are not approved is rejected with 409. |
+| **P6-21** | Failed check safety | **PASS** | `test_p6_21_missing_check_never_counts_as_pass`: Missing or failed review runs never count as passing checks. |
+| **P6-22** | Revision staleness | **PASS** | `test_p6_22_revision_change_makes_assessment_stale`: Updating an asset's selected revision marks existing audits as `is_stale=True`. |
+| **P6-23** | Fact change staleness | **PASS** | `test_p6_23_fact_change_makes_assessment_stale`: Materially updating a fact relied on by campaign assets triggers audit staleness. |
+| **P6-24** | Approval isolation | **PASS** | `test_p6_24_campaign_readiness_does_not_approve_assets`: Campaign release evaluation never mutates individual `ContentSubmission.workflow_status`. |
+| **P6-25** | Decision auditable | **PASS** | `test_p6_25_release_decision_persisted_auditably`: Release decision records actor, role, timestamp, rationale, and checklist snapshot in `campaign_release_decisions`. |
+| **P6-26** | Audit idempotency | **PASS** | `test_p6_26_repeated_audits_do_not_corrupt_history`: Successive audit calls produce clean, sequential immutable records without corruption. |
+| **P6-27** | Authorization enforcement | **PASS** | `test_p6_27_release_requires_reviewer_role`: Creators attempting release are refused (403 Forbidden); only reviewers can sign off. |
+| **P6-28** | Brand boundaries | **PASS** | `test_p6_28_brand_boundary_enforcement`: Campaign retrieval and asset associations strictly enforce brand scoping. |
+| **P6-29** | Empty campaign honesty | **PASS** | `test_p6_29_empty_campaign_handling`: Auditing a campaign with zero assets returns clear empty states and 0 counts; never synthesizes fake passes. |
+| **P6-30** | Provider failure honesty | **PASS** | `test_p6_30_provider_failure_not_reported_as_success`: Provider errors are flagged as failed reviews, blocking campaign release. |
+| **P6-31** | Clean migration upgrade | **PASS** | `test_p6_31_migrations_apply_cleanly`: Migration `0006` applies cleanly to PostgreSQL with all tables, foreign keys, and unique constraints. |
+| **P6-32** | Regression integrity | **PASS** | `test_p6_32_phases_0_to_5_regression_clean`: All 292 prior backend tests pass with zero failures. |
+| **P6-33** | Frontend campaign list | **PASS** | `tests/campaigns.test.tsx` (`P6-U01`): Renders real campaigns, badges, owner, and asset counts from API. |
+| **P6-34** | Frontend creation & assets | **PASS** | `tests/campaigns.test.tsx` (`P6-U02`): Campaign creation modal and asset addition flow work with validation. |
+| **P6-35** | Frontend audit display | **PASS** | `tests/campaigns.test.tsx` (`P6-U03`): Renders audit findings, category filters, and source citations. |
+| **P6-36** | Frontend readiness & staleness | **PASS** | `tests/campaigns.test.tsx` (`P6-U04`): Displays readiness status badges and prominent stale audit warnings. |
+| **P6-37** | Frontend release actions | **PASS** | `tests/campaigns.test.tsx` (`P6-U05`): Release button is disabled when blocked or stale, and enabled when ready for release. |
+| **P6-38** | Frontend audit history | **PASS** | `tests/campaigns.test.tsx` (`P6-U06`): History drawer renders past audit runs and comparison diffs. |
+| **P6-39** | Frontend state handling | **PASS** | `tests/campaigns.test.tsx` (`P6-U07`): Loading, empty, and error states render correctly. |
+| **P6-40** | Navigation integrity | **PASS** | `AppShell.tsx` provides seamless navigation between Campaigns, Knowledge, Facts, Review, Fact Changes, Guidelines, Sandbox, and Insights. |
+
+---
+
+### Mandatory End-to-End Workflow Demonstration (Phase 6)
+
+The Phase 6 end-to-end workflow is automated via `scripts/e2e_campaigns.mjs`:
+```bash
+node scripts/e2e_campaigns.mjs
+```
+
+The script executes the full 13-step scenario across 19 verification checks:
+1. Creates brand `Nova Systems P6 E2E` and uploads source document.
+2. Creates approved brand fact: `Nova Battery Life: 24 hours`.
+3. Creates Campaign: `Nova Launch Campaign 2026`.
+4. Creates Asset 1 (Landing Page) claiming `24 hours` and reviews it.
+5. Creates Asset 2 (Email Campaign) with conflicting claim: `Our device features 36 hours of battery life` and reviews it.
+6. Adds both assets to the campaign with channel roles `landing_page` and `email`.
+7. Runs Campaign Audit 1: Confirms `cross_asset_contradiction` detected between Asset 1 and Asset 2 with evidence citing `Nova Battery Life`.
+8. Evaluates Release Readiness: Confirms outcome is `blocked` with `blocker_count=1`.
+9. Verifies release attempt is rejected (409 Conflict).
+10. Corrects Asset 2: Creates Revision 2 with corrected claim `24 hours of battery life`.
+11. Reviews Revision 2 (passes cleanly) and approves Revision 2 via reviewer role (`reviewer_1`).
+12. Updates Asset 2's selected revision in the campaign to Revision 2.
+13. Verifies Audit 1 is immediately marked `is_stale=True` with `stale_reason="Asset revision replaced in campaign"`.
+14. Runs Campaign Audit 2: Verified contradiction is resolved; `blocker_count=0`.
+15. Compares Audit 2 with Audit 1: Confirms contradiction finding is in `resolved_findings`.
+16. Evaluates Release Readiness: Confirms outcome is `ready_for_release`.
+17. Verifies non-reviewer cannot release (403 Forbidden).
+18. Executes Release as Reviewer: Successfully transitions campaign to `released` status.
+19. Materially edits the approved fact to `30 hours` and verifies Audit 2 is immediately marked stale (`is_stale=True`).
+20. Confirms all historical audits, findings, revisions, and release decisions remain persisted and auditable.
+
+Result: **19 PASS, 0 FAIL, 0 SKIP**.
+Grand Total across all E2E test scripts: **131 PASS, 0 FAIL, 0 SKIP**.
+
+---
+
+### Testing Environment and Limitations (Phases 5 & 6)
 * **Environment**: Windows 11, Node.js 22, Python 3.12, PostgreSQL 16 (Docker container mapped to port 5433).
 * **LLM Provider**: In this local test environment, no live `LLM_API_KEY` was configured. Deterministic document rule extraction and fallback deterministic lint engines were executed and verified. The LLM extraction path was tested with mock responses in pytest; provider missing errors are handled honestly (503/fallback with explicit notice).
 * **Browser**: Frontend integration was validated via Vitest/JSDOM against real Next.js API client contracts, followed by full Next.js production build (`next build`) and live HTTP API verification via Node.js E2E scripts. Visual regression was not performed with a live headless browser.

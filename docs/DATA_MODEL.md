@@ -263,3 +263,46 @@ brands (id, name, ...)
 1. **Content and Review Immutability**: `policy_simulations` and `policy_simulation_results` write strictly to their own tables. They **never update or delete** records in `content_submissions`, `review_runs`, `review_findings`, `finding_evidence`, `workflow_events`, or `fact_change_impacts`.
 2. **Approval Gate**: Creating or simulating a proposed rule does not change `guideline_rules.status` from `proposed` to `active`. Only an explicit call to `PATCH /api/guidelines/{rule_id}` by an authorized reviewer activates a rule.
 3. **Cross-Brand Isolation**: Foreign keys with composite brand constraints guarantee that guideline rules, source documents, content submissions, and simulations cannot span different brands.
+
+---
+
+## Phase 6 Data Model: Campaign Intelligence, Portfolio Audits & Release Readiness
+
+Phase 6 introduces structures to group related content assets into campaigns, record immutable multi-asset audit snapshots, categorize audit findings with full evidence chains, and enforce guarded release decisions.
+
+```text
+brands (id, name, ...)
+  │
+  └─── 1:n ─── campaigns (id, brand_id, title, description, status, external_ref, ...)
+                  │
+                  ├─── 1:n ─── campaign_assets (id, campaign_id, asset_id, selected_submission_id, channel_role, ...)
+                  │
+                  ├─── 1:n ─── campaign_audits (id, campaign_id, audit_number, readiness_outcome, is_stale, ...)
+                  │               │
+                  │               └─── 1:n ─── campaign_audit_findings (id, audit_id, finding_category, severity, ...)
+                  │
+                  └─── 1:n ─── campaign_release_decisions (id, campaign_id, audit_id, decision, actor, ...)
+```
+
+### Table Definitions
+
+| Table | Meaning & Constraints |
+|---|---|
+| `campaigns` | The container representing a coordinated marketing effort for a brand. Columns: `brand_id`, `title`, `description`, `external_ref`, `owner`, `status` (`draft`, `in_review`, `blocked`, `ready_for_release`, `released`, `archived`), `created_by`, `updated_by`, timestamps. Foreign key to `brands(id)` on delete CASCADE. Check constraint ensures `title` is non-empty. |
+| `campaign_assets` | Membership record binding a content asset and its selected revision to a campaign. Columns: `campaign_id`, `asset_id` (the root submission/asset ID), `selected_submission_id` (the exact revision evaluated), `channel_role` (`landing_page`, `ad`, `email`, `social_post`, `product_spec`, `other`), `notes`, `added_by`, timestamps. `UniqueConstraint("campaign_id", "asset_id")` ensures an asset appears at most once in a campaign. Foreign keys to `campaigns(id)` and `content_submissions(id)`. |
+| `campaign_audits` | Immutable snapshot of a multi-asset campaign assessment. Columns: `campaign_id`, `audit_number`, `readiness_outcome` (`blocked`, `needs_review`, `ready_for_release`), `is_stale` (boolean), `stale_reason`, `summary` (JSONB: blocker/review/warning/passed counts, checks run/skipped), `evaluated_asset_revisions` (JSONB snapshot of asset IDs, submission IDs, revision numbers, content hashes), `rule_version_snapshot` (JSONB), `fact_version_snapshot` (JSONB), `created_by`, `completed_at`. `UniqueConstraint("campaign_id", "audit_number")`. |
+| `campaign_audit_findings` | Individual issue identified during a campaign audit. Columns: `audit_id`, `campaign_id`, `asset_id`, `submission_id`, `content_hash`, `claim_text`, `finding_category` (`cross_asset_contradiction`, `outdated_fact`, `open_impact`, `guideline_violation`, `missing_review`, `failed_review`, `human_review_required`, `workflow_unapproved`), `severity` (`blocker`, `warning`, `info`), `status` (`confirmed`, `potential`, `uncertain`, `unevaluable`), `explanation`, `suggested_action`, `requires_human_review` (bool), `fact_id`, `fact_version`, `rule_id`, `rule_version`, `review_finding_id`, `impact_id`, `source_document_id`, `source_page`, `source_excerpt`. |
+| `campaign_release_decisions` | Append-only audit record of release status transitions. Columns: `campaign_id`, `audit_id`, `decision` (`ready_for_release`, `released`, `blocked`), `actor_name`, `actor_role`, `rationale`, `checklist_snapshot` (JSONB), `created_at`. Non-updatable audit trail. |
+
+### Semantic Invariants & Integrity Guarantees
+
+1. **Non-Destructive Association**: `campaign_assets` references `content_submissions` via foreign keys. Removing an asset from a campaign deletes only the membership row; it does not delete or alter the content submission, its revisions, its reviews, or its workflow events.
+2. **Same-Brand Enforcement**: Backend service logic validates that any added asset belongs to the campaign's `brand_id`. Cross-brand asset additions are rejected with `422 Unprocessable Entity`.
+3. **Revision Replacement & Invalidation**: Adding an asset with an updated `submission_id` replaces the selected revision, updates `updated_at`, and marks all existing audits for that campaign as `is_stale=True` with `stale_reason="Asset revision replaced in campaign"`.
+4. **Staleness Tracking**: An audit is marked stale if asset revisions change or if fact/policy versions diverge after assessment. Stale audits cannot be used to release a campaign (`409 Conflict`).
+5. **Guarded Release Transition**: A campaign may transition to `released` only when:
+   - The latest audit has `readiness_outcome == 'ready_for_release'`.
+   - The latest audit is not stale (`is_stale == False`).
+   - Every individual asset in the campaign is in `approved` workflow status.
+   - The actor holds the `reviewer` role (`X-Actor-Role: reviewer`).
+

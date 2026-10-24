@@ -203,13 +203,24 @@ def get_governance_insights(
         "total_changed_outcomes": total_changed_outcomes,
     }
 
+    # 10. Campaigns Summary (Phase 6)
+    from app.models.campaign import Campaign
+    camp_query = select(Campaign.status, func.count(Campaign.id)).where(Campaign.brand_id == brand_id).group_by(Campaign.status)
+    camp_counts = dict(db.execute(camp_query).all())
+    total_campaigns = sum(camp_counts.values())
+
     overview = {
         "completed_reviews": completed_reviews,
         "total_findings": total_findings,
         "open_impacts": open_impacts,
         "decisions": decisions,
         "rules_summary": rules_summary,
+        "campaigns_summary": {
+            "total_campaigns": total_campaigns,
+            "by_status": camp_counts,
+        },
     }
+
 
     finding_patterns = {
         "by_status": by_status,

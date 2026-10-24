@@ -4,6 +4,7 @@ import type {
   Brand, ContentItem, DocumentSection, Evidence, Fact, Finding, Impact, ImpactContentBrief, ImpactDetail, ImpactResolution, ReviewRun, SourceDocument,
   Suggestion, WorkflowEvent, WorkflowStatus,
   GuidelineRule, GuidelineRuleVersion, GuidelineLintIssue, PolicySimulation, PolicySimulationDetail, GovernanceInsights,
+  Campaign, CampaignAsset, CampaignAudit, CampaignAuditFinding, ReleaseEvaluation, CampaignReleaseDecision, ChannelRole,
 } from "@/types/api";
 
 /** In-memory stand-in for the BrandPR API that mirrors the real response shapes and error format. */
@@ -29,8 +30,66 @@ export class FakeApi {
   guidelineVersions: Record<string, GuidelineRuleVersion[]> = {};
   lintIssues: Record<string, GuidelineLintIssue[]> = {};
   simulations: PolicySimulationDetail[] = [];
+  campaigns: Campaign[] = [];
+  campaignAssets: Record<string, CampaignAsset[]> = {};
+  campaignAudits: Record<string, CampaignAudit[]> = {};
   private n = 1;
   id = () => `00000000-0000-4000-8000-${String(this.n++).padStart(12, "0")}`;
+
+  addCampaign(brandId: string, over: Partial<Campaign> = {}): Campaign {
+    const id = this.id();
+    const c: Campaign = {
+      id,
+      brand_id: brandId,
+      title: "Sample Campaign",
+      description: "A test campaign",
+      external_reference: null,
+      owner: "Alex Admin",
+      status: "draft",
+      release_notes: null,
+      released_at: null,
+      released_by: null,
+      created_at: "2026-10-24T12:00:00Z",
+      updated_at: "2026-10-24T12:00:00Z",
+      asset_count: 0,
+      latest_audit_id: null,
+      latest_readiness: null,
+      latest_audit_stale: false,
+      blocker_count: 0,
+      warning_count: 0,
+      assets: [],
+      ...over,
+    };
+    this.campaigns.push(c);
+    if (!this.campaignAssets[id]) this.campaignAssets[id] = [];
+    if (!this.campaignAudits[id]) this.campaignAudits[id] = [];
+    return c;
+  }
+
+  addCampaignAsset(campaignId: string, contentItem: ContentItem, role: ChannelRole = "landing_page"): CampaignAsset {
+    const id = this.id();
+    const a: CampaignAsset = {
+      id,
+      campaign_id: campaignId,
+      brand_id: contentItem.brand_id,
+      asset_id: contentItem.asset_id,
+      asset_title: contentItem.title,
+      selected_submission_id: contentItem.id,
+      revision_number: contentItem.revision_number,
+      channel_role: role,
+      display_order: 1,
+      notes: null,
+      added_by: "Alex Admin",
+      added_at: "2026-10-24T12:00:00Z",
+      workflow_status: contentItem.workflow_status,
+      content_hash: contentItem.content_hash,
+    };
+    if (!this.campaignAssets[campaignId]) this.campaignAssets[campaignId] = [];
+    this.campaignAssets[campaignId].push(a);
+    const camp = this.campaigns.find(c => c.id === campaignId);
+    if (camp) camp.asset_count = this.campaignAssets[campaignId].length;
+    return a;
+  }
 
   addGuideline(brandId: string, over: Partial<GuidelineRule> = {}): GuidelineRule {
     const id = this.id();
@@ -653,6 +712,140 @@ export class FakeApi {
         },
       };
       return this.json(200, insights);
+    }
+    if ((m = p.match(/^\/brands\/([^/]+)\/campaigns$/))) {
+      const brandId = m[1];
+      if (method === "GET") {
+        const items = this.campaigns.filter((c) => c.brand_id === brandId);
+        return this.json(200, items);
+      }
+      if (method === "POST") {
+        const b = (body ?? {}) as Record<string, any>;
+        const c = this.addCampaign(brandId, {
+          title: b.title || "New Campaign",
+          description: b.description || null,
+          external_reference: b.external_reference || null,
+          owner: b.owner || "Alex Admin",
+        });
+        return this.json(201, c);
+      }
+    }
+    if ((m = p.match(/^\/campaigns\/([^/]+)$/))) {
+      const campId = m[1];
+      const camp = this.campaigns.find((c) => c.id === campId);
+      if (!camp) return this.error(404, "not_found", "Campaign not found");
+      if (method === "GET") return this.json(200, { ...camp, assets: this.campaignAssets[campId] || [] });
+      if (method === "PATCH") {
+        const b = (body ?? {}) as Record<string, any>;
+        Object.assign(camp, b);
+        return this.json(200, camp);
+      }
+    }
+    if ((m = p.match(/^\/campaigns\/([^/]+)\/assets$/))) {
+      const campId = m[1];
+      if (method === "GET") {
+        return this.json(200, this.campaignAssets[campId] || []);
+      }
+      if (method === "POST") {
+        const b = (body ?? {}) as Record<string, any>;
+        const content = this.contents.find((c) => c.id === b.content_submission_id);
+        if (!content) return this.error(404, "not_found", "Content not found");
+        const asset = this.addCampaignAsset(campId, content, b.channel_role || "landing_page");
+        return this.json(201, asset);
+      }
+    }
+    if ((m = p.match(/^\/campaigns\/([^/]+)\/assets\/([^/]+)$/))) {
+      const campId = m[1];
+      const assetId = m[2];
+      if (method === "DELETE") {
+        if (this.campaignAssets[campId]) {
+          this.campaignAssets[campId] = this.campaignAssets[campId].filter((a) => a.id !== assetId);
+          const camp = this.campaigns.find((c) => c.id === campId);
+          if (camp) camp.asset_count = this.campaignAssets[campId].length;
+        }
+        return this.json(200, { deleted: true });
+      }
+    }
+    if ((m = p.match(/^\/campaigns\/([^/]+)\/audits$/))) {
+      const campId = m[1];
+      if (method === "GET") {
+        return this.json(200, this.campaignAudits[campId] || []);
+      }
+      if (method === "POST") {
+        const auditId = this.id();
+        const audit: CampaignAudit = {
+          id: auditId,
+          campaign_id: campId,
+          audit_number: (this.campaignAudits[campId]?.length || 0) + 1,
+          status: "completed",
+          readiness_outcome: "ready_for_release",
+          is_stale: false,
+          stale_reason: null,
+          asset_count: this.campaignAssets[campId]?.length || 0,
+          blocker_count: 0,
+          warning_count: 0,
+          review_required_count: 0,
+          passed_checks_count: 2,
+          summary: {},
+          created_by: "Alex Admin",
+          created_at: "2026-10-24T12:00:00Z",
+          findings: [],
+        };
+        if (!this.campaignAudits[campId]) this.campaignAudits[campId] = [];
+        this.campaignAudits[campId].unshift(audit);
+        const camp = this.campaigns.find((c) => c.id === campId);
+        if (camp) {
+          camp.latest_readiness = "ready_for_release";
+          camp.status = "ready_for_release";
+          camp.latest_audit_id = auditId;
+          camp.latest_audit_stale = false;
+        }
+        return this.json(201, audit);
+      }
+    }
+    if ((m = p.match(/^\/campaign-audits\/([^/]+)$/))) {
+      const auditId = m[1];
+      for (const list of Object.values(this.campaignAudits)) {
+        const found = list.find((a) => a.id === auditId);
+        if (found) return this.json(200, found);
+      }
+      return this.error(404, "not_found", "Audit not found");
+    }
+    if ((m = p.match(/^\/campaigns\/([^/]+)\/release-evaluation$/))) {
+      const campId = m[1];
+      const camp = this.campaigns.find((c) => c.id === campId);
+      const evalResult: ReleaseEvaluation = {
+        campaign_id: campId,
+        status: camp?.status || "ready",
+        is_stale: camp?.latest_audit_stale || false,
+        can_release: true,
+        blocker_count: 0,
+        warning_count: 0,
+        review_required_count: 0,
+        blockers: [],
+        audit_id: camp?.latest_audit_id || null,
+        readiness_outcome: camp?.latest_readiness || "ready_for_release",
+      };
+      return this.json(200, evalResult);
+    }
+    if ((m = p.match(/^\/campaigns\/([^/]+)\/release$/))) {
+      const campId = m[1];
+      const camp = this.campaigns.find((c) => c.id === campId);
+      if (camp) {
+        camp.status = "released";
+        camp.latest_readiness = "ready_for_release";
+      }
+      const dec: CampaignReleaseDecision = {
+        decision_id: this.id(),
+        campaign_id: campId,
+        audit_id: camp?.latest_audit_id || this.id(),
+        decision: "released",
+        actor_name: "Alex Admin",
+        actor_role: "reviewer",
+        release_notes: "Release sign-off passed",
+        released_at: "2026-10-24T12:00:00Z",
+      };
+      return this.json(201, dec);
     }
     return this.error(404, "not_found", `No fake route for ${method} ${p}`);
   };

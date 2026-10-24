@@ -193,3 +193,49 @@ Existing responses gained fields: content items carry `asset_id`, `revision_numb
 - `404 document_not_found`: Extraction source document does not exist for this brand.
 - `422 validation_error`: Missing required fields, blank rule text, or invalid category/severity enum values.
 
+---
+
+## Phase 6: Campaign Intelligence, Portfolio Audits & Release Readiness
+
+### Campaign Workspace & Asset Membership
+
+| Method and path | Who | What |
+|---|---|---|
+| `GET /api/brands/{brand_id}/campaigns` | any | List campaigns for a brand with asset counts, latest audit readiness, and staleness indicator. |
+| `POST /api/brands/{brand_id}/campaigns` | actor | Create a new campaign (201). Body: `{ title, description?, external_ref?, owner? }`. |
+| `GET /api/campaigns/{campaign_id}` | any | Retrieve campaign detail including asset count and latest audit status. |
+| `PATCH /api/campaigns/{campaign_id}` | actor | Edit campaign metadata or change status. |
+| `GET /api/campaigns/{campaign_id}/assets` | any | List all assets in the campaign with channel role, selected revision number, content title, and individual workflow status. |
+| `POST /api/campaigns/{campaign_id}/assets` | actor | Add or replace an asset in the campaign (201). Body: `{ asset_id, selected_submission_id?, channel_role?, notes? }`. Replaces revision if asset already exists and marks audits stale. |
+| `DELETE /api/campaigns/{campaign_id}/assets/{asset_id}` | actor | Remove asset membership from the campaign (204). Underlying submission and history remain intact. |
+
+### Campaign Audit Engine & History
+
+| Method and path | Who | What |
+|---|---|---|
+| `POST /api/campaigns/{campaign_id}/audits` | actor | Trigger a campaign-wide audit (201). Evaluates cross-asset fact consistency, outdated facts, open impacts, active guidelines, and workflow approvals. Returns immutable audit snapshot with findings. |
+| `GET /api/campaigns/{campaign_id}/audits` | any | List all historical audits for a campaign, ordered newest first. |
+| `GET /api/campaign-audits/{audit_id}` | any | Get complete audit detail including summary metrics, evaluated revisions, and full findings array. |
+| `GET /api/campaign-audits/{audit_id}/comparison/{previous_audit_id}` | any | Compare two audit runs. Categorizes findings into `new_findings`, `resolved_findings`, `persistent_findings`, and `unevaluable_findings`. |
+
+### Release Readiness Evaluation & Sign-Off
+
+| Method and path | Who | What |
+|---|---|---|
+| `POST /api/campaigns/{campaign_id}/release-evaluation` | any | Evaluates whether campaign is ready for release based on latest audit and asset approval states. Returns `{ outcome, is_stale, blocker_count, review_required_count, asset_checklist[] }`. |
+| `POST /api/campaigns/{campaign_id}/release` | reviewer | Transition campaign to `released` status (200). Refused if actor is not reviewer (403), audit is stale (409), blockers exist (409), or any asset is unapproved (409). |
+
+### Phase 6 Error Contracts
+
+- `403 reviewer_role_required`: Attempting to release a campaign without `X-Actor-Role: reviewer`.
+- `404 campaign_not_found`: Referenced campaign does not exist.
+- `404 asset_not_found`: Content submission referenced does not exist.
+- `404 audit_not_found`: Campaign audit record not found.
+- `409 duplicate_membership`: Asset already added to campaign with the exact same revision.
+- `409 release_blocked`: Attempting to release when blockers or review-required items exist.
+- `409 audit_is_stale`: Latest audit was invalidated by revision changes or fact/policy updates.
+- `409 unapproved_assets`: One or more assets in the campaign are not in `approved` workflow status.
+- `409 no_audit_performed`: Attempting to release without running any campaign audit.
+- `422 cross_brand_asset_rejected`: Attempting to add an asset belonging to another brand.
+
+

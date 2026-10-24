@@ -5,7 +5,9 @@ import type {
   Impact, ImpactDetail, ImpactHistory, ImpactResolution, ImpactSummary, ActorRole,
   DecisionInput, FindingDetail, RevisionCreateInput, RevisionHistory, Suggestion, Workflow,
   GuidelineRule, GuidelineRuleVersion, GuidelineLintIssue, PolicySimulation, PolicySimulationDetail, GovernanceInsights,
+  Campaign, CampaignAsset, CampaignAudit, CampaignAuditFinding, AuditComparison, ReleaseEvaluation, CampaignReleaseDecision, ChannelRole,
 } from "@/types/api";
+
 
 // Same-origin by default: Next.js proxies /api/* to the backend. Override only with a public, non-secret URL.
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
@@ -185,7 +187,31 @@ export const api = {
   getPolicySimulation: (id: string) => request<PolicySimulationDetail>(`/policy-simulations/${id}`),
   getGovernanceInsights: (brandId: string, period = "all") =>
     request<GovernanceInsights>(`/brands/${brandId}/insights${qs({ period })}`),
+
+  // Phase 6 Campaigns & Release Readiness
+  createCampaign: (brandId: string, data: { title: string; description?: string; external_reference?: string; owner?: string }) =>
+    request<Campaign>(`/brands/${brandId}/campaigns`, { ...json("POST", data), headers: actorHeaders() }),
+  listCampaigns: (brandId: string, status?: string) =>
+    request<Campaign[]>(`/brands/${brandId}/campaigns${qs({ status })}`),
+  getCampaign: (id: string) => request<Campaign>(`/campaigns/${id}`),
+  updateCampaign: (id: string, data: { title?: string; description?: string; external_reference?: string; owner?: string; status?: string }) =>
+    request<Campaign>(`/campaigns/${id}`, { ...json("PATCH", data), headers: actorHeaders() }),
+  addCampaignAsset: (campaignId: string, data: { asset_id: string; submission_id?: string; channel_role?: ChannelRole; display_order?: number; notes?: string }) =>
+    request<CampaignAsset>(`/campaigns/${campaignId}/assets`, { ...json("POST", data), headers: actorHeaders() }),
+  listCampaignAssets: (campaignId: string) => request<CampaignAsset[]>(`/campaigns/${campaignId}/assets`),
+  removeCampaignAsset: (campaignId: string, assetId: string) =>
+    request<void>(`/campaigns/${campaignId}/assets/${assetId}`, { method: "DELETE", headers: actorHeaders() }),
+  runCampaignAudit: (campaignId: string) =>
+    request<CampaignAudit>(`/campaigns/${campaignId}/audits`, { method: "POST", headers: actorHeaders() }),
+  listCampaignAudits: (campaignId: string) => request<CampaignAudit[]>(`/campaigns/${campaignId}/audits`),
+  getCampaignAudit: (auditId: string) => request<CampaignAudit>(`/campaign-audits/${auditId}`),
+  compareCampaignAudits: (auditId: string, previousAuditId: string) =>
+    request<AuditComparison>(`/campaign-audits/${auditId}/comparison/${previousAuditId}`),
+  getReleaseEvaluation: (campaignId: string) => request<ReleaseEvaluation>(`/campaigns/${campaignId}/release-evaluation`),
+  releaseCampaign: (campaignId: string, data: { release_notes?: string }) =>
+    request<CampaignReleaseDecision>(`/campaigns/${campaignId}/release`, { ...json("POST", data), headers: actorHeaders() }),
 };
+
 
 export function errorMessage(e: unknown): string {
   if (e instanceof ApiError) return e.message;

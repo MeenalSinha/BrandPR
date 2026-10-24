@@ -1,10 +1,9 @@
 # BrandPR
 
-BrandPR is a review and approval platform for marketing content, built for the Inkloom AI competition (CodeAxis).
-This repository contains **Phase 0** (project setup and interface contracts), **Phase 1** (database and approved brand knowledge), **Phase 2** (claim verification and ProofGraph) and **Phase 3** (Claim Ledger fact-change propagation).
-Phase 2 checks submitted content against the approved facts and shows evidence-backed findings. Phase 3 notices when an approved fact later changes or expires and flags the reviewed content that relied on the earlier version. Phase 4 (correction and approval workflow) builds on it.
+This repository contains **Phase 0** (project setup and interface contracts), **Phase 1** (database and approved brand knowledge), **Phase 2** (claim verification and ProofGraph), **Phase 3** (Claim Ledger fact-change propagation), **Phase 4** (revision and approval workflow), **Phase 5** (guideline lint, policy sandbox, governance intelligence), and **Phase 6** (campaign intelligence, portfolio audits, and release readiness).
+Phase 6 evaluates an entire collection of related marketing assets together as a campaign, detects cross-asset contradictions, outdated fact dependencies, open impacts, and workflow gaps, provides immutable audit snapshots with history comparison, and enforces a deterministic, evidence-backed release-readiness gate.
 
-What works now: create brands, upload PDF, text and CSV source documents with page-level text extraction, manage approved facts with qualifications, validity dates, ownership, source citations, explicit approval and full change history, and inspect any fact's source passage highlighted in the document.
+What works now: create brands, upload PDF, text and CSV source documents with page-level text extraction, manage approved facts with qualifications, validity dates, ownership, source citations, explicit approval and full change history, inspect any fact's source passage highlighted in the document, run deterministic and AI-assisted claim verification, trace and resolve fact-change impacts, manage guideline rules with deterministic linting, simulate policy revisions in a safe sandbox, view real-time governance intelligence analytics, organize assets into multi-channel campaigns, perform campaign-wide consistency audits, and evaluate release readiness with guarded sign-off.
 
 ## Folder structure
 
@@ -226,6 +225,51 @@ Phase 5 elevates BrandPR from a content review tool into a proactive governance 
 cd backend && .venv/bin/alembic upgrade head          # applies migration 0005 (guidelines, simulations, insights)
 node scripts/e2e_guidelines.mjs                       # live end-to-end check of Phase 5 workflow (backend and frontend running)
 ./scripts/verify.sh                                   # all automated checks across all phases
+```
+
+## Campaign Intelligence, Portfolio Audits & Release Readiness (Phase 6)
+
+Phase 6 elevates BrandPR to evaluate entire multi-channel marketing campaigns as unified portfolios. It bridges the gap between individual content approvals and launch readiness, providing cross-asset consistency verification, deterministic release gates, and immutable audit history.
+
+### Campaign Workspace (`/campaigns`, `/campaigns/[campaignId]`)
+
+* **Campaign Entities**: Group existing content assets under a brand with channel roles (e.g. `landing_page`, `email`, `social_post`, `ad`, `product_spec`).
+* **Selected Revisions**: A campaign binds specific revisions of content assets (`selected_submission_id`). Replacing an asset's selected revision invalidates existing release assessments and triggers an automated staleness notification.
+* **Brand Isolation**: Enforced by backend services and composite database checks; assets belonging to another brand cannot be added to a campaign.
+* **Non-Destructive Membership**: Adding or removing assets from a campaign never copies, alters, or deletes the underlying content submissions, review runs, findings, or approval history.
+
+### Campaign Consistency Audit Engine
+
+Executes a comprehensive, evidence-backed evaluation across all selected campaign assets:
+1. **Cross-Asset Fact Inconsistencies**: Detects when different campaign assets make conflicting or incompatible claims regarding the same approved brand fact (e.g., one asset claiming 24 hours of battery life while another claims 36 hours for the same product specification).
+2. **Outdated Fact Dependencies & Open Impacts**: Identifies assets relying on expired fact versions or subject to unresolved fact-change impacts.
+3. **Guideline Policy Alignment**: Verifies that active brand guidelines are adhered to across assets and flags guideline contradictions.
+4. **Workflow & Approval Completeness**: Identifies unreviewed assets, failed reviews, pending human-review requirements, and incomplete Phase 4 reviewer approvals.
+5. **Audit Snapshots & History Comparison**: Persists every audit as an immutable snapshot. Consecutive audit runs can be compared with `GET /api/campaign-audits/{id}/comparison/{prev_id}` to categorize `new`, `persistent`, `resolved`, and `unevaluable` findings.
+
+### Deterministic Release-Readiness Gate
+
+Release decisions are computed from real persisted database state:
+* `blocked`: One or more hard blockers exist (confirmed fact contradictions, unresolved fact impacts, missing/failed reviews, workflow rejections).
+* `needs_review`: No confirmed hard blockers, but pending human-review items or unapproved revisions remain.
+* `ready_for_release`: All campaign assets have passing reviews for their exact content hashes, zero blockers, zero open impacts, and approved Phase 4 workflow status.
+* `released`: Transition executed explicitly by an authorized reviewer (`X-Actor-Role: reviewer`). Non-reviewers are refused (403 Forbidden).
+
+### Staleness Protection
+
+An assessment is marked `is_stale=True` whenever:
+* An asset's selected revision is replaced in the campaign.
+* A content asset undergoes a material revision or new review.
+* An active fact or guideline rule relied upon by the campaign changes.
+
+Releasing a stale assessment is strictly forbidden by the backend (409 Conflict).
+
+### Run Phase 6
+
+```bash
+cd backend && .venv/bin/alembic upgrade head          # applies migration 0006 (campaigns, audits, findings, decisions)
+node scripts/e2e_campaigns.mjs                        # live end-to-end check of Phase 6 workflow (19 verification steps)
+./scripts/verify.sh                                   # complete test suite across all phases
 ```
 
 ## Key behaviours

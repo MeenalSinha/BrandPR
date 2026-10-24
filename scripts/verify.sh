@@ -6,4 +6,10 @@ export TEST_DATABASE_URL="${TEST_DATABASE_URL:-postgresql+psycopg://brandpr:bran
 echo "== backend tests"; (cd backend && ${PYTHON:-.venv/bin/python} -m pytest)
 echo "== frontend typecheck and tests"; (cd frontend && npm run typecheck && npm test)
 echo "== frontend production build"; (cd frontend && BACKEND_URL=http://localhost:8000 npm run build)
-echo "All automated checks passed. Start the backend and frontend, then run: node scripts/e2e_live.mjs && node scripts/e2e_review.mjs && node scripts/e2e_fact_impacts.mjs && node scripts/e2e_workflow.mjs"
+echo "All automated checks passed. Start the backend and frontend, then run:"
+echo "  node scripts/e2e_live.mjs"
+echo "  node scripts/e2e_review.mjs"
+echo "  node scripts/e2e_fact_impacts.mjs"
+echo "  node scripts/e2e_workflow.mjs"
+echo "  node scripts/e2e_guidelines.mjs"
+echo "  node scripts/e2e_campaigns.mjs"
