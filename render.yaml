@@ -1,0 +1,52 @@
+# Render Blueprint Specification for BrandPR Full Stack
+# Deploy with 1-click on https://dashboard.render.com/blueprints
+
+version: "1"
+
+databases:
+  - name: brandpr-db
+    databaseName: brandpr
+    user: brandpr
+    plan: starter
+
+services:
+  # 1. FastAPI Backend Service
+  - type: web
+    name: brandpr-backend
+    runtime: python
+    rootDir: backend
+    plan: starter
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    disk:
+      name: storage
+      mountPath: /data/storage
+      sizeGB: 1
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: brandpr-db
+          property: connectionString
+      - key: STORAGE_DIR
+        value: /data/storage
+      - key: CORS_ORIGINS
+        # Replace or append with custom domain if applicable
+        value: "https://brandpr-frontend.onrender.com"
+      - key: DOCS_ENABLED
+        value: "true"
+
+  # 2. Next.js Frontend Service
+  - type: web
+    name: brandpr-frontend
+    runtime: node
+    rootDir: frontend
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BACKEND_URL
+        value: "https://brandpr-backend.onrender.com"

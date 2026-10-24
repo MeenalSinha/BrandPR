@@ -13,7 +13,7 @@ _factory: sessionmaker[Session] | None = None
 def get_engine() -> Engine:
     global _engine, _factory
     if _engine is None:
-        _engine = create_engine(get_settings().database_url, pool_pre_ping=True)
+        _engine = create_engine(get_settings().normalized_database_url, pool_pre_ping=True)
         _factory = sessionmaker(bind=_engine, expire_on_commit=False)
     return _engine
 
