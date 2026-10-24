@@ -5,6 +5,7 @@ from fastapi import APIRouter, File, Form, Query, UploadFile, status
 from fastapi.responses import FileResponse, Response
 
 from app.api.deps import DbSession, Limit, Offset, OptionalActor, verify_brand_access
+from app.core.config import get_settings
 from app.core.errors import ConflictError, NotFoundError
 from app.schemas.common import ERROR_RESPONSES, ErrorResponse, Page
 from app.schemas.document import DocumentRead, DocumentTextRead, SectionRead, TableRead

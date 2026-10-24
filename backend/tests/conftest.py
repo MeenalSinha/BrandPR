@@ -19,6 +19,7 @@ os.environ["CORS_ORIGINS"] = "http://localhost:3000,http://127.0.0.1:3000"
 os.environ["REVIEW_WARNING_DAYS"] = "30"
 os.environ["MAX_CONTENT_CHARS"] = "5000"
 os.environ["LLM_API_KEY"] = ""  # tests never reach a real provider; they inject FakeProvider
+os.environ["GCS_BUCKET"] = ""  # tests use local STORAGE_DIR, not remote Cloud Storage
 
 import pymupdf  # noqa: E402
 import pytest  # noqa: E402
