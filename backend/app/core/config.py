@@ -56,15 +56,6 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
-    @property
-    def normalized_database_url(self) -> str:
-        url = self.database_url
-        if url.startswith("postgres://"):
-            return "postgresql+psycopg://" + url[len("postgres://"):]
-        if url.startswith("postgresql://") and not url.startswith("postgresql+"):
-            return "postgresql+psycopg://" + url[len("postgresql://"):]
-        return url
-
     def assert_safe_for_environment(self) -> None:
         if self.app_env == "production":
             if self.clock_offset_days != 0:
