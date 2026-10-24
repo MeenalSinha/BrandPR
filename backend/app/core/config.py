@@ -7,6 +7,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEV_DATABASE_URL = "postgresql+psycopg://brandpr:brandpr_dev_password@localhost:5432/brandpr"
@@ -21,11 +22,19 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     database_url: str = DEV_DATABASE_URL
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def clean_database_url(cls, v: str) -> str:
+        if isinstance(v, str):
+            return v.strip().lstrip("\ufeff")
+        return v
+
     # Comma-separated list of browser origins allowed to call the API directly.
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
     # Local file storage for uploaded source documents. Must be persistent in deployment.
     storage_dir: Path = Path("./storage")
+    gcs_bucket: str = ""
     max_upload_bytes: int = 10 * 1024 * 1024
     max_pdf_pages: int = 500
     max_csv_rows: int = 50_000
@@ -34,6 +43,8 @@ class Settings(BaseSettings):
     review_warning_days: int = 30
 
     docs_enabled: bool = True
+    jwt_secret: str = "brandpr-production-secure-jwt-key-32chars"
+    auth_enforced: bool = False
 
     # Testing aid (Phase 3): shifts the date used by validity and expiry rules, so expiry behaviour can be exercised
     # against a running server without waiting. Only today() is shifted; stored timestamps stay real. Refused in production.

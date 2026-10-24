@@ -8,4 +8,4 @@ RUN useradd --create-home appuser && mkdir -p /data/storage && chown -R appuser 
 USER appuser
 ENV STORAGE_DIR=/data/storage
 EXPOSE 8000
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

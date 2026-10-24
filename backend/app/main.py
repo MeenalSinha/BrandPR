@@ -7,7 +7,7 @@ from fastapi import APIRouter, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.api import brands, campaigns, content, documents, facts, guidelines, health, impacts, insights, reviews, workflow
+from app.api import auth, brands, campaigns, content, documents, facts, guidelines, health, impacts, insights, reviews, workflow
 from app.core.config import get_settings
 from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging
@@ -54,7 +54,7 @@ def create_app() -> FastAPI:
         allow_origins=settings.cors_origin_list,
         allow_credentials=False,
         allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Content-Type", "Accept", "X-Actor-Name", "X-Actor-Role"],
+        allow_headers=["Content-Type", "Accept", "Authorization", "X-Actor-Name", "X-Actor-Role"],
         expose_headers=["X-Request-ID", "Content-Disposition"],
     )
 
@@ -72,7 +72,7 @@ def create_app() -> FastAPI:
 
     register_error_handlers(app)
     api = APIRouter(prefix="/api")
-    for module in (health, brands, documents, facts, content, reviews, impacts, workflow, guidelines, insights, campaigns):
+    for module in (health, auth, brands, documents, facts, content, reviews, impacts, workflow, guidelines, insights, campaigns):
         api.include_router(module.router)
     app.include_router(api)
     return app

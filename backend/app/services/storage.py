@@ -1,4 +1,4 @@
-"""Local file storage for uploaded documents.
+"""File storage for uploaded documents (local file storage or Google Cloud Storage).
 
 Files are stored under generated identifiers only. A client-supplied filename is never used to
 build a path, and every resolved path is verified to stay inside the storage root.
@@ -23,9 +23,25 @@ def _root() -> Path:
     return root
 
 
+def _gcs_client():
+    from google.cloud import storage as gcs
+
+    return gcs.Client()
+
+
 def save(brand_id: uuid.UUID, document_id: uuid.UUID, data: bytes, source_type: str) -> str:
     """Write bytes atomically and return the relative storage key."""
     key = f"{brand_id}/{document_id}{EXTENSIONS[source_type]}"
+    settings = get_settings()
+    if settings.gcs_bucket:
+        client = _gcs_client()
+        bucket = client.bucket(settings.gcs_bucket)
+        blob = bucket.blob(key)
+        from app.services.extraction import MIME_BY_TYPE
+
+        blob.upload_from_string(data, content_type=MIME_BY_TYPE.get(source_type, "application/octet-stream"))
+        return key
+
     target = resolve(key)
     target.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=target.parent, prefix=".upload-")
@@ -48,8 +64,40 @@ def resolve(key: str) -> Path:
     return path
 
 
+def read_bytes(key: str) -> bytes | None:
+    settings = get_settings()
+    if settings.gcs_bucket:
+        try:
+            client = _gcs_client()
+            bucket = client.bucket(settings.gcs_bucket)
+            blob = bucket.blob(key)
+            if not blob.exists():
+                return None
+            return blob.download_as_bytes()
+        except Exception:
+            return None
+    try:
+        path = resolve(key)
+    except StorageError:
+        return None
+    if not path.is_file():
+        return None
+    return path.read_bytes()
+
+
 def delete(key: str | None) -> None:
     if not key:
+        return
+    settings = get_settings()
+    if settings.gcs_bucket:
+        try:
+            client = _gcs_client()
+            bucket = client.bucket(settings.gcs_bucket)
+            blob = bucket.blob(key)
+            if blob.exists():
+                blob.delete()
+        except Exception:
+            pass
         return
     try:
         resolve(key).unlink(missing_ok=True)

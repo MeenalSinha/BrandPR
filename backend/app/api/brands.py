@@ -2,7 +2,7 @@ import uuid
 
 from fastapi import APIRouter, status
 
-from app.api.deps import DbSession, Limit, Offset
+from app.api.deps import DbSession, Limit, Offset, OptionalActor, verify_brand_access
 from app.schemas.brand import BrandCreate, BrandRead, BrandUpdate
 from app.schemas.common import ERROR_RESPONSES, Page
 from app.services import brands as svc
@@ -22,10 +22,12 @@ def create_brand(data: BrandCreate, db: DbSession):
 
 
 @router.get("/{brand_id}", response_model=BrandRead, responses=ERROR_RESPONSES, summary="Get a brand")
-def get_brand(brand_id: uuid.UUID, db: DbSession):
+def get_brand(brand_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    verify_brand_access(brand_id, actor)
     return svc.get_brand(db, brand_id)
 
 
 @router.patch("/{brand_id}", response_model=BrandRead, responses=ERROR_RESPONSES, summary="Update a brand")
-def update_brand(brand_id: uuid.UUID, data: BrandUpdate, db: DbSession):
+def update_brand(brand_id: uuid.UUID, data: BrandUpdate, db: DbSession, actor: OptionalActor = None):
+    verify_brand_access(brand_id, actor)
     return svc.update_brand(db, brand_id, data)

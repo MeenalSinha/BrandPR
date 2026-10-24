@@ -82,7 +82,17 @@ The browser calls same-origin `/api/*`; Next.js proxies it to `BACKEND_URL` (def
 
 ### Configuration
 
-All settings come from environment variables, documented in `.env.example`. Real secrets never belong in tracked files; `.env` is git-ignored. `APP_ENV=production` refuses to start with the development database password or localhost CORS origins. Uploaded files are stored under `STORAGE_DIR`, which must be on persistent storage in any deployment (docker compose uses a named volume).
+All settings come from environment variables, documented in `.env.example`. Real secrets never belong in tracked files; `.env` is git-ignored. `APP_ENV=production` refuses to start with the development database password or localhost CORS origins. Uploaded files are stored under `STORAGE_DIR`, which must be on persistent storage in any deployment (docker compose uses a named volume) or in Google Cloud Storage (`GCS_BUCKET_NAME`).
+
+### Google Cloud Production Deployment
+
+BrandPR is deployed to Google Cloud Platform:
+- **FastAPI Backend:** Containerized on **Cloud Run** with direct Unix socket connection to Cloud SQL.
+- **Next.js Frontend:** Containerized on **Cloud Run** serving static assets and dynamic reverse-proxy API routing.
+- **Database:** Managed **Cloud SQL for PostgreSQL 16**.
+- **Document Storage:** Persistent **Google Cloud Storage** bucket (`GCS_BUCKET_NAME`).
+- **Secrets:** Managed via **Google Secret Manager** (`DATABASE_URL`, `JWT_SECRET`, etc.).
+- **Security & Authorization:** Independently verified HMAC-SHA256 JWT bearer tokens (`Authorization: Bearer <token>`). Production strictly rejects caller-asserted `X-Actor-*` headers, enforces role-based compliance guardrails (`creator` vs. `reviewer`), and isolates multi-tenant brand records.
 
 ## Tests
 

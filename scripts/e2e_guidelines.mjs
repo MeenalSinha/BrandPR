@@ -18,8 +18,8 @@ const check = (name, ok, extra = "") => {
 };
 const skip = (name, why) => { console.log(`SKIP  ${name}  ${why}`); skipped++; };
 
-const CREATOR = { "X-Actor-Name": "e2e-creator", "X-Actor-Role": "creator" };
-const REVIEWER = { "X-Actor-Name": "e2e-reviewer", "X-Actor-Role": "reviewer" };
+let CREATOR = { "X-Actor-Name": "e2e-creator", "X-Actor-Role": "creator" };
+let REVIEWER = { "X-Actor-Name": "e2e-reviewer", "X-Actor-Role": "reviewer" };
 
 const callAt = async (origin, method, path, body, headers = {}) => {
   const isForm = body instanceof FormData;
@@ -39,8 +39,18 @@ let child = null;
 try {
   console.log("=== PHASE 5 END-TO-END DEMONSTRATION ===");
 
+  // Obtain verified tokens for production authentication
+  const creatorAuth = await call("POST", "/api/auth/login", { email: "creator@brandpr.internal", password: "brandpr_creator_demo" });
+  if (creatorAuth.json?.access_token) {
+    CREATOR = { Authorization: `Bearer ${creatorAuth.json.access_token}` };
+  }
+  const reviewerAuth = await call("POST", "/api/auth/login", { email: "reviewer@brandpr.internal", password: "brandpr_reviewer_demo" });
+  if (reviewerAuth.json?.access_token) {
+    REVIEWER = { Authorization: `Bearer ${reviewerAuth.json.access_token}` };
+  }
+
   // 1. Create a unique brand
-  const brand = (await call("POST", "/api/brands", { name: `E2E Guidelines Brand ${Date.now()}` })).json;
+  const brand = (await call("POST", "/api/brands", { name: `E2E Guidelines Brand ${Date.now()}` }, CREATOR)).json;
   check("1. create a unique test brand", Boolean(brand?.id));
 
   // 2. Upload source document

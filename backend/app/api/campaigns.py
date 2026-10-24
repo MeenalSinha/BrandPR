@@ -4,7 +4,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, Header, Query, status
 
-from app.api.deps import CurrentActor, DbSession, OptionalActor, ReviewerActor
+from app.api.deps import CurrentActor, DbSession, OptionalActor, ReviewerActor, verify_brand_access
 from app.models.campaign import CampaignAudit
 from app.schemas.campaign import (
     AuditComparisonOut, CampaignAssetAdd, CampaignAssetOut, CampaignAuditOut,
@@ -23,7 +23,8 @@ router = APIRouter(tags=["campaigns"])
     status_code=status.HTTP_201_CREATED,
     summary="Create a new marketing campaign",
 )
-def create_campaign(brand_id: uuid.UUID, data: CampaignCreate, db: DbSession, actor: OptionalActor):
+def create_campaign(brand_id: uuid.UUID, data: CampaignCreate, db: DbSession, actor: OptionalActor = None):
+    verify_brand_access(brand_id, actor)
     actor_name = actor.name if actor else None
     camp = camp_svc.create_campaign(db, brand_id, data, actor_name=actor_name)
     return CampaignOut.model_validate(camp)
@@ -34,7 +35,8 @@ def create_campaign(brand_id: uuid.UUID, data: CampaignCreate, db: DbSession, ac
     response_model=list[CampaignOut],
     summary="List all campaigns for a brand",
 )
-def list_campaigns(brand_id: uuid.UUID, db: DbSession, status: Optional[str] = Query(None)):
+def list_campaigns(brand_id: uuid.UUID, db: DbSession, status: Optional[str] = Query(None), actor: OptionalActor = None):
+    verify_brand_access(brand_id, actor)
     campaigns = camp_svc.list_campaigns(db, brand_id, status=status)
     results = []
     for c in campaigns:
@@ -71,10 +73,11 @@ def list_campaigns(brand_id: uuid.UUID, db: DbSession, status: Optional[str] = Q
     response_model=CampaignOut,
     summary="Get campaign detail and selected assets",
 )
-def get_campaign(campaign_id: uuid.UUID, db: DbSession):
+def get_campaign(campaign_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
     c = camp_svc.get_campaign(db, campaign_id)
     if not c:
         raise camp_svc.CampaignError("campaign_not_found", "Campaign not found", 404)
+    verify_brand_access(c.brand_id, actor)
 
     assets = camp_svc.list_campaign_assets(db, c.id)
     latest_audits = audit_svc.list_campaign_audits(db, c.id)

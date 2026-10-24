@@ -43,6 +43,11 @@ class ActorRequired(AppError):
     code = "actor_required"
 
 
+class Unauthorized(AppError):
+    status_code = 401
+    code = "unauthorized"
+
+
 class Forbidden(AppError):
     status_code = 403
     code = "forbidden"

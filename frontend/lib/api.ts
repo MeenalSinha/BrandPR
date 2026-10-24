@@ -30,18 +30,67 @@ export class ApiError extends Error {
   }
 }
 
-/** Demo identity sent with workflow calls. NOT authentication: the backend enforces roles, but anyone can claim one. */
-let identity: { name: string; role: ActorRole } = { name: "", role: "creator" };
-export function setIdentity(name: string, role: ActorRole) { identity = { name: name.trim(), role }; }
-export function getIdentity() { return identity; }
-const actorHeaders = (): Record<string, string> => (identity.name ? { "X-Actor-Name": identity.name, "X-Actor-Role": identity.role } : {});
+/** Authenticated token & session management */
+let authToken: string = "";
+let identity: { name: string; role: ActorRole; email?: string } = { name: "Morgan Lead", role: "creator" };
+
+export function setAuthToken(token: string) {
+  authToken = token;
+  if (typeof window !== "undefined") {
+    try { localStorage.setItem("brandpr_token", token); } catch {}
+  }
+}
+
+export function getAuthToken(): string {
+  if (!authToken && typeof window !== "undefined") {
+    try { authToken = localStorage.getItem("brandpr_token") || ""; } catch {}
+  }
+  return authToken;
+}
+
+export function setIdentity(name: string, role: ActorRole, email?: string) {
+  identity = { name: name.trim(), role, email };
+  if (typeof window !== "undefined") {
+    try { localStorage.setItem("brandpr_identity", JSON.stringify(identity)); } catch {}
+  }
+}
+
+export function getIdentity() {
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("brandpr_identity");
+      if (stored) identity = JSON.parse(stored);
+    } catch {}
+  }
+  return identity;
+}
+
+export const authHeaders = (): Record<string, string> => {
+  const token = getAuthToken();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  if (identity.name) {
+    headers["X-Actor-Name"] = identity.name;
+    headers["X-Actor-Role"] = identity.role;
+  }
+  return headers;
+};
+const actorHeaders = authHeaders;
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   let response: Response;
+  const dynamicHeaders = authHeaders();
   try {
     response = await fetch(`${API_BASE}${path}`, {
       ...init,
-      headers: { Accept: "application/json", ...(init.body && !(init.body instanceof FormData) ? { "Content-Type": "application/json" } : {}), ...init.headers },
+      headers: {
+        Accept: "application/json",
+        ...(init.body && !(init.body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
+        ...dynamicHeaders,
+        ...init.headers,
+      },
     });
   } catch {
     throw new ApiError(0, "network_error", "Cannot reach the BrandPR API. Check that the backend is running and try again.");
@@ -210,6 +259,13 @@ export const api = {
   getReleaseEvaluation: (campaignId: string) => request<ReleaseEvaluation>(`/campaigns/${campaignId}/release-evaluation`),
   releaseCampaign: (campaignId: string, data: { release_notes?: string }) =>
     request<CampaignReleaseDecision>(`/campaigns/${campaignId}/release`, { ...json("POST", data), headers: actorHeaders() }),
+
+  // Authentication
+  login: (data: { email?: string; password?: string; demo_role?: string }) =>
+    request<{ access_token: string; token_type: string; user: { name: string; email: string; role: ActorRole } }>("/auth/login", json("POST", data)),
+  listDemoUsers: () =>
+    request<{ users: Array<{ id: string; name: string; email: string; role: ActorRole; access_token: string }> }>("/auth/demo-users"),
+  me: () => request<{ name: string; email: string; role: ActorRole; is_reviewer: boolean; is_creator: boolean }>("/auth/me"),
 };
 
 

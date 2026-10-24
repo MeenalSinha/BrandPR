@@ -2,7 +2,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, status
 
-from app.api.deps import DbSession, Limit, Offset, get_review_provider
+from app.api.deps import DbSession, Limit, Offset, OptionalActor, get_review_provider, verify_brand_access
 from app.schemas.common import ERROR_RESPONSES, Page
 from app.schemas.review import ContentCreate, ContentRead, ContentSummary, ReviewCreate, ReviewRunRead
 from app.services import content as svc
@@ -12,12 +12,14 @@ router = APIRouter(tags=["content"])
 
 
 @router.post("/brands/{brand_id}/content", response_model=ContentRead, status_code=status.HTTP_201_CREATED, responses=ERROR_RESPONSES, summary="Submit marketing content")
-def create_content(brand_id: uuid.UUID, data: ContentCreate, db: DbSession):
+def create_content(brand_id: uuid.UUID, data: ContentCreate, db: DbSession, actor: OptionalActor = None):
+    verify_brand_access(brand_id, actor)
     return svc.content_read(db, svc.create_content(db, brand_id, data))
 
 
 @router.get("/brands/{brand_id}/content", response_model=Page[ContentSummary], responses=ERROR_RESPONSES, summary="List submitted content for a brand", description="Every revision is listed; pass latest_only=true for one row per content asset (its newest revision).")
-def list_content(brand_id: uuid.UUID, db: DbSession, limit: Limit = 50, offset: Offset = 0, latest_only: bool = False):
+def list_content(brand_id: uuid.UUID, db: DbSession, limit: Limit = 50, offset: Offset = 0, latest_only: bool = False, actor: OptionalActor = None):
+    verify_brand_access(brand_id, actor)
     items, total = svc.list_content(db, brand_id, limit, offset, latest_only=latest_only)
     return Page(items=items, total=total, limit=limit, offset=offset)
 

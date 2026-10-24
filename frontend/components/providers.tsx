@@ -75,6 +75,13 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
+    // Automatically exchange active demo role for a cryptographically verified JWT Bearer token
+    api.login({ demo_role: role }).catch(() => {
+      // fallback or offline dev
+    });
+  }, [role]);
+
+  useEffect(() => {
     let live = true;
     setLoading(true);
     api.listBrands().then(

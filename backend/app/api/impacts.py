@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query
 
-from app.api.deps import DbSession, Limit, Offset
+from app.api.deps import DbSession, Limit, Offset, OptionalActor, verify_brand_access
 from app.schemas.common import ERROR_RESPONSES, Page
 from app.schemas.impact import ImpactDetail, ImpactRead, ImpactStatus, ImpactSummary, ImpactTrigger
 from app.services import impacts as svc
@@ -24,14 +24,17 @@ def list_impacts(
     fact_id: Annotated[uuid.UUID | None, Query(description="Only impacts of this fact (must belong to the brand).")] = None,
     status: ImpactStatus | None = None, trigger_type: ImpactTrigger | None = None,
     content_id: Annotated[uuid.UUID | None, Query(description="Only impacts of this content item.")] = None,
+    actor: OptionalActor = None,
 ):
+    verify_brand_access(brand_id, actor)
     items, total = svc.list_impacts(db, brand_id, limit=limit, offset=offset, fact_id=fact_id, status=status, trigger_type=trigger_type, content_id=content_id)
     return Page(items=items, total=total, limit=limit, offset=offset)
 
 
 @router.get("/brands/{brand_id}/fact-change-impacts/summary", response_model=ImpactSummary, responses=ERROR_RESPONSES,
             summary="Counts of open impacts, computed from the stored records", description=SWEEP_NOTE)
-def impacts_summary(brand_id: uuid.UUID, db: DbSession):
+def impacts_summary(brand_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    verify_brand_access(brand_id, actor)
     return svc.summary(db, brand_id)
 
 

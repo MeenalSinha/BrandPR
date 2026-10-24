@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 
-from app.api.deps import CurrentActor, DbSession, Limit, Offset
+from app.api.deps import CurrentActor, DbSession, Limit, Offset, OptionalActor, verify_brand_access
 from app.schemas.common import ERROR_RESPONSES
 from app.schemas.guideline import (
     GuidelineExtractRequest, GuidelineExtractResponse, GuidelineLintIssueOut, GuidelineLintResponse,
@@ -30,7 +30,9 @@ def list_guideline_rules(
     category: Annotated[str | None, Query(description="Filter by category")] = None,
     limit: Limit = 100,
     offset: Offset = 0,
+    actor: OptionalActor = None,
 ):
+    verify_brand_access(brand_id, actor)
     return svc_g.list_rules(db, brand_id, status=status, category=category, limit=limit, offset=offset)
 
 
@@ -47,6 +49,7 @@ def create_guideline_rule(
     actor: CurrentActor,
     db: DbSession,
 ):
+    verify_brand_access(brand_id, actor)
     return svc_g.create_rule(db, brand_id, data, actor_name=actor.name, actor_role=actor.role)
 
 

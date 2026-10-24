@@ -7,3 +7,5 @@ pydantic==2.14.1
 pydantic-settings==2.16.1
 python-multipart==0.0.32
 pymupdf==2.0
+google-cloud-storage>=2.14.0
+httpx==0.28.1

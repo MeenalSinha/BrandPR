@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, File, Form, Query, UploadFile, status
 from fastapi.responses import FileResponse, Response
 
-from app.api.deps import DbSession, Limit, Offset
+from app.api.deps import DbSession, Limit, Offset, OptionalActor, verify_brand_access
 from app.core.errors import ConflictError, NotFoundError
 from app.schemas.common import ERROR_RESPONSES, ErrorResponse, Page
 from app.schemas.document import DocumentRead, DocumentTextRead, SectionRead, TableRead
@@ -24,7 +24,9 @@ def list_documents(
     brand_id: uuid.UUID, db: DbSession, limit: Limit = 50, offset: Offset = 0,
     processing_status: Literal["pending", "processing", "processed", "failed"] | None = None,
     include_archived: bool = False,
+    actor: OptionalActor = None,
 ):
+    verify_brand_access(brand_id, actor)
     rows, total = svc.list_documents(db, brand_id, limit=limit, offset=offset, status=processing_status, include_archived=include_archived)
     return Page(items=svc.to_read_many(db, rows), total=total, limit=limit, offset=offset)
 
@@ -38,7 +40,9 @@ def list_documents(
 def upload_document(
     brand_id: uuid.UUID, db: DbSession, file: Annotated[UploadFile, File(description="PDF, plain text or CSV")],
     title: Annotated[str | None, Form(max_length=300)] = None,
+    actor: OptionalActor = None,
 ):
+    verify_brand_access(brand_id, actor)
     doc = svc.upload_document(db, brand_id, filename=file.filename, title=title, stream=file.file)
     return svc.to_read(db, doc)
 
@@ -67,20 +71,32 @@ def get_table(document_id: uuid.UUID, db: DbSession, limit: Limit = 100, offset:
     return svc.table_view(db, document_id, limit=limit, offset=offset)
 
 
-@router.get("/documents/{document_id}/file", responses=ERROR_RESPONSES, summary="Download the original file",
-            response_class=FileResponse)
+@router.get("/documents/{document_id}/file", responses=ERROR_RESPONSES, summary="Download the original file")
 def download_file(document_id: uuid.UUID, db: DbSession, inline: bool = False):
     doc = svc.get_document(db, document_id)
     if not doc.storage_path:
         raise NotFoundError("The original file is not available.")
+    disposition = "inline" if inline and doc.source_type == "pdf" else "attachment"
+    settings = get_settings()
+    if settings.gcs_bucket:
+        data = storage.read_bytes(doc.storage_path)
+        if data is None:
+            raise NotFoundError("The original file is not available.")
+        return Response(
+            content=data,
+            media_type=doc.mime_type,
+            headers={
+                "Content-Disposition": f'{disposition}; filename="{doc.filename}"',
+                "X-Content-Type-Options": "nosniff",
+                "Content-Security-Policy": "default-src 'none'; sandbox",
+            },
+        )
     try:
         path = storage.resolve(doc.storage_path)
     except storage.StorageError:
         raise NotFoundError("The original file is not available.") from None
     if not path.is_file():
         raise NotFoundError("The original file is not available.")
-    # Inline display is limited to PDFs; everything else is always a download. Uploaded content is never executed.
-    disposition = "inline" if inline and doc.source_type == "pdf" else "attachment"
     return FileResponse(
         path, media_type=doc.mime_type, filename=doc.filename, content_disposition_type=disposition,
         headers={"X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'; sandbox"},

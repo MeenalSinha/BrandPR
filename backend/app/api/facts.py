@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query, status
 
-from app.api.deps import DbSession, Limit, Offset
+from app.api.deps import DbSession, Limit, Offset, OptionalActor, verify_brand_access
 from app.schemas.common import ERROR_RESPONSES, Page
 from app.schemas.fact import (
     EffectiveState, FactCategory, FactCreate, FactRead, FactRevisionRead, FactStatus, FactStatusUpdate, FactSummary,
@@ -25,7 +25,9 @@ def list_facts(
     source_document_id: uuid.UUID | None = None,
     q: Annotated[str | None, Query(max_length=200, description="Search name, value, qualifications and owner")] = None,
     sort: Literal["updated_at", "name", "review_date", "expires_at", "created_at"] = "updated_at",
+    actor: OptionalActor = None,
 ):
+    verify_brand_access(brand_id, actor)
     rows, total = svc.list_facts(
         db, brand_id, limit=limit, offset=offset, status=status, category=category, effective=effective_state,
         review=review_state, review_within_days=review_within_days, source_document_id=source_document_id, q=q, sort=sort,
@@ -34,12 +36,14 @@ def list_facts(
 
 
 @router.get("/brands/{brand_id}/facts/summary", response_model=FactSummary, responses=ERROR_RESPONSES, summary="Counts by effective and review state")
-def facts_summary(brand_id: uuid.UUID, db: DbSession):
+def facts_summary(brand_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    verify_brand_access(brand_id, actor)
     return svc.summary(db, brand_id)
 
 
 @router.post("/brands/{brand_id}/facts", response_model=FactRead, status_code=status.HTTP_201_CREATED, responses=ERROR_RESPONSES, summary="Create a fact")
-def create_fact(brand_id: uuid.UUID, data: FactCreate, db: DbSession):
+def create_fact(brand_id: uuid.UUID, data: FactCreate, db: DbSession, actor: OptionalActor = None):
+    verify_brand_access(brand_id, actor)
     return svc.to_read(db, svc.create_fact(db, brand_id, data))
 
 
