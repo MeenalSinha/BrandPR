@@ -307,7 +307,7 @@ describe("Review content page (ProofGraph)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Review content" }));
     expect(await screen.findByText("Enter a title for this draft.")).toBeInTheDocument();
     expect(screen.getByText("Paste or write the content to review.")).toBeInTheDocument();
-    expect(api.calls.some((c) => c.method === "POST")).toBe(false);
+    expect(api.calls.some((c) => c.method === "POST" && !c.url.includes("/auth"))).toBe(false);
   });
 
   it("P2-35: summary counts and the finding list are exactly what the backend returned", async () => {
@@ -425,7 +425,7 @@ describe("Review content page (ProofGraph)", () => {
     expect(api.calls.map((c) => c.url)).toEqual(expect.arrayContaining([
       `/api/content/${api.contents[0].id}`, `/api/content/${api.contents[0].id}/reviews`, `/api/reviews/${api.runs[api.contents[0].id][0].id}/findings?limit=200`,
     ]));
-    expect(api.calls.some((c) => c.method === "POST")).toBe(false);  // nothing was re-run or reconstructed
+    expect(api.calls.some((c) => c.method === "POST" && !c.url.includes("/auth"))).toBe(false);  // nothing was re-run or reconstructed
     expect(screen.getAllByTestId("finding-item")).toHaveLength(3);
     expect(screen.getByTestId("draft-text")).toHaveTextContent(DRAFT);
   });

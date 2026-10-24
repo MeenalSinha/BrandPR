@@ -116,20 +116,23 @@ try {
   check("16c. a metadata-only edit (owner) creates no impact", owner.status === 200 && (await call("GET", `/api/brands/${brand.id}/fact-change-impacts`)).json.total === 2);
 
   // 17. Controlled expiry: a second backend whose date is 10 days ahead sweeps the same database.
-  const defaultPython = process.platform === "win32" ? join(root, "backend/.venv/Scripts/python.exe") : join(root, "backend/.venv/bin/python");
-  const python = process.env.E2E_BACKEND_PYTHON ?? defaultPython;
-  const port = 8100 + Math.floor(Math.random() * 800);
-  const shifted = `http://127.0.0.1:${port}`;
-  try {
-    child = spawn(python, ["-m", "uvicorn", "app.main:app", "--port", String(port), "--log-level", "warning"], {
-      cwd: join(root, "backend"), env: { ...process.env, CLOCK_OFFSET_DAYS: "10", APP_ENV: "development" }, stdio: "ignore",
-    });
-    let up = false;
-    for (let i = 0; i < 60 && !up; i++) {
-      await new Promise((r) => setTimeout(r, 500));
-      up = await fetch(shifted + "/api/health").then((r) => r.ok, () => false);
-    }
-    if (!up) throw new Error("the shifted-date backend did not start");
+  if (!base.includes("localhost") && !base.includes("127.0.0.1")) {
+    skip("17-18. controlled expiry through a second backend", "remote deployment active; cannot spawn local shifted-date backend against remote Cloud SQL");
+  } else {
+    const defaultPython = process.platform === "win32" ? join(root, "backend/.venv/Scripts/python.exe") : join(root, "backend/.venv/bin/python");
+    const python = process.env.E2E_BACKEND_PYTHON ?? defaultPython;
+    const port = 8100 + Math.floor(Math.random() * 800);
+    const shifted = `http://127.0.0.1:${port}`;
+    try {
+      child = spawn(python, ["-m", "uvicorn", "app.main:app", "--port", String(port), "--log-level", "warning"], {
+        cwd: join(root, "backend"), env: { ...process.env, CLOCK_OFFSET_DAYS: "10", APP_ENV: "development" }, stdio: "ignore",
+      });
+      let up = false;
+      for (let i = 0; i < 60 && !up; i++) {
+        await new Promise((r) => setTimeout(r, 500));
+        up = await fetch(shifted + "/api/health").then((r) => r.ok, () => false);
+      }
+      if (!up) throw new Error("the shifted-date backend did not start");
     const today = (await callAt(shifted, "GET", `/api/facts/${weight.id}`)).json;
     check("17. with the date moved forward the weight fact reads as expired while stored as active", today.status === "active" && today.effective_state === "expired" && (await call("GET", `/api/facts/${weight.id}`)).json.effective_state === "current");
     const swept = (await callAt(shifted, "GET", `/api/brands/${brand.id}/fact-change-impacts`)).json;
@@ -154,6 +157,7 @@ try {
     })());
   } catch (err) {
     skip("17-18. controlled expiry through a second backend", `could not run: ${err.message}`);
+  }
   }
 
   const page = await fetch(base + "/fact-changes");

@@ -345,6 +345,13 @@ export class FakeApi {
     const p = url.pathname.replace(/^\/api/, "");
     let m: RegExpMatchArray | null;
     if (p === "/health") return this.json(200, { status: "ok", service: "brandpr-api", version: "0.1.0", environment: "test" });
+    if (p === "/auth/login") {
+      return this.json(200, {
+        access_token: "fake.jwt.token",
+        token_type: "bearer",
+        user: { id: "u1", name: "Demo User", email: "demo@brandpr.internal", role: "creator", brand_ids: ["*"] },
+      });
+    }
     if (p === "/brands" && method === "GET") return this.json(200, { items: this.brands, total: this.brands.length, limit: 200, offset: 0 });
     if (p === "/brands" && method === "POST") {
       const b = this.addBrand(body.name);

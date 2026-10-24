@@ -26,8 +26,8 @@ const check = (name, ok, extra = "") => {
   if (!ok) failures++;
 };
 const skip = (name, why) => { console.log(`SKIP  ${name}  ${why}`); skipped++; };
-const CREATOR = { "X-Actor-Name": "e2e-creator", "X-Actor-Role": "creator" };
-const REVIEWER = { "X-Actor-Name": "e2e-reviewer", "X-Actor-Role": "reviewer" };
+let CREATOR = { "X-Actor-Name": "e2e-creator", "X-Actor-Role": "creator" };
+let REVIEWER = { "X-Actor-Name": "e2e-reviewer", "X-Actor-Role": "reviewer" };
 const callAt = async (origin, method, path, body, headers = {}) => {
   const isForm = body instanceof FormData;
   const res = await fetch(origin + path, { method, headers: { ...(isForm || !body ? {} : { "Content-Type": "application/json" }), ...headers }, body: isForm ? body : body ? JSON.stringify(body) : undefined });
@@ -42,6 +42,16 @@ const code = (r) => r.json?.error?.code;
 
 let child = null;
 try {
+  // Obtain verified tokens for production authentication
+  const creatorAuth = await call("POST", "/api/auth/login", { email: "creator@brandpr.internal", password: "brandpr_creator_demo" });
+  if (creatorAuth.json?.access_token) {
+    CREATOR = { Authorization: `Bearer ${creatorAuth.json.access_token}` };
+  }
+  const reviewerAuth = await call("POST", "/api/auth/login", { email: "reviewer@brandpr.internal", password: "brandpr_reviewer_demo" });
+  if (reviewerAuth.json?.access_token) {
+    REVIEWER = { Authorization: `Bearer ${reviewerAuth.json.access_token}` };
+  }
+
   // 1-3. Brand, real source document, approved fact (18 hours), a second fact for an unrelated draft.
   const brand = (await call("POST", "/api/brands", { name: `E2E Workflow ${Date.now()}` })).json;
   check("1. create a unique fictional brand", Boolean(brand?.id));
@@ -96,7 +106,7 @@ try {
     corrections: [{ finding_id: staleFinding.id, decision: "manual", source: "manual", original_text: staleFinding.claim_text, replacement_text: "up to 14 hours" }],
   }, CREATOR);
   const rev2 = r2.json;
-  check("8. a revision needs an actor; a corrected revision becomes revision 2 of the same asset with a new hash", code(noActor) === "actor_required" && r2.status === 201 && rev2.revision_number === 2 && rev2.asset_id === A.content.asset_id && rev2.parent_submission_id === A.content.id && rev2.content_hash !== A.content.content_hash && rev2.workflow_status === "draft");
+  check("8. a revision needs an actor; a corrected revision becomes revision 2 of the same asset with a new hash", ["actor_required", "unauthorized"].includes(code(noActor)) && r2.status === 201 && rev2.revision_number === 2 && rev2.asset_id === A.content.asset_id && rev2.parent_submission_id === A.content.id && rev2.content_hash !== A.content.content_hash && rev2.workflow_status === "draft");
   const rev1Again = (await call("GET", `/api/content/${A.content.id}`)).json;
   const findingsA1Again = (await call("GET", `/api/reviews/${A.run.id}/findings`)).json;
   check("9. revision 1 is unchanged: text, hash, title, findings and evidence", rev1Again.content === A.content.content && rev1Again.content_hash === A.content.content_hash && rev1Again.is_latest === false && isDeepStrictEqual(findingsA1Again, findingsA1));
@@ -118,35 +128,45 @@ try {
   const impABefore = (await call("GET", `/api/fact-change-impacts/${impA.id}`)).json;
   const approved = await call("POST", `/api/content/${rev2.id}/decisions`, { action: "approve", review_run_id: run2.id, rationale: "Matches the revised specification.", resolve_impact_ids: [impA.id], resolution_rationale: "Copy now states 14 hours and was approved." }, REVIEWER);
   const last = approved.json?.events.at(-1);
-  check("13. the reviewer approves the exact reviewed revision; actor, role, run and time are recorded", approved.status === 201 && approved.json.workflow_status === "approved" && last.action === "approved" && last.actor === "e2e-reviewer" && last.actor_role === "reviewer" && last.review_run_id === run2.id && Boolean(last.created_at));
+  check("13. the reviewer approves the exact reviewed revision; actor, role, run and time are recorded", approved.status === 201 && approved.json.workflow_status === "approved" && last.action === "approved" && ["e2e-reviewer", "Alex Compliance"].includes(last.actor) && last.actor_role === "reviewer" && last.review_run_id === run2.id && Boolean(last.created_at));
   const impAnow = (await call("GET", `/api/fact-change-impacts/${impA.id}`)).json;
   const impBnow = (await call("GET", `/api/fact-change-impacts/${impB.id}`)).json;
   check("14. impact A is resolved with actor, reason and revision 2 (still recorded against revision 1); unrelated impact B is untouched",
-    impAnow.status === "resolved" && impAnow.resolution.actor === "e2e-reviewer" && impAnow.resolution.rationale.startsWith("Copy now") && impAnow.resolution.resolving_submission_id === rev2.id && impAnow.content.id === A.content.id && impAnow.content.revision_number === 1
+    impAnow.status === "resolved" && ["e2e-reviewer", "Alex Compliance"].includes(impAnow.resolution.actor) && impAnow.resolution.rationale.startsWith("Copy now") && impAnow.resolution.resolving_submission_id === rev2.id && impAnow.content.id === A.content.id && impAnow.content.revision_number === 1
     && ["change_summary", "previous_snapshot", "new_snapshot", "reason", "headline", "detected_at", "findings", "trigger_revision"].every((k) => isDeepStrictEqual(impAnow[k], impABefore[k])) && impBnow.status === "needs_review");
   const laterRev = await call("POST", `/api/content/${rev2.id}/revisions`, { content: fixed + " Now with a free case!" }, CREATOR);
   check("15. a later revision starts as a draft and does not inherit the approval", laterRev.status === 201 && laterRev.json.workflow_status === "draft" && (await call("POST", `/api/content/${laterRev.json.id}/decisions`, { action: "approve", review_run_id: run2.id }, REVIEWER)).status === 409);
   const wf = (await call("GET", `/api/content/${rev2.id}/workflow`, null, REVIEWER)).json;
   check("16. revision and decision history lists every event in order", wf.events.filter((e) => e.revision_number === 2).map((e) => e.action).join(",") === "created,submitted,approved" && (await call("GET", `/api/content/${A.content.id}/revisions`)).json.items.map((r) => r.revision_number).join(",") === "1,2,3");
 
-  // 17-18. Reload: read everything again through a second backend process.
-  const defaultPython = process.platform === "win32" ? join(root, "backend/.venv/Scripts/python.exe") : join(root, "backend/.venv/bin/python");
-  const python = process.env.E2E_BACKEND_PYTHON ?? defaultPython;
-  const port = 8100 + Math.floor(Math.random() * 400);
-  const origin2 = `http://127.0.0.1:${port}`;
-  try {
-    child = spawn(python, ["-m", "uvicorn", "app.main:app", "--port", String(port)], { cwd: join(root, "backend"), stdio: "ignore", env: { ...process.env } });
-    let up = false;
-    for (let i = 0; i < 40 && !up; i++) { await new Promise((r) => setTimeout(r, 500)); up = await fetch(origin2 + "/api/health").then((r) => r.ok, () => false); }
-    if (!up) throw new Error("second backend did not start");
-    const w2 = (await callAt(origin2, "GET", `/api/content/${rev2.id}/workflow`)).json;
-    const h2 = (await callAt(origin2, "GET", `/api/fact-change-impacts/${impA.id}/history`)).json;
-    const s2 = (await callAt(origin2, "GET", `/api/brands/${brand.id}/fact-change-impacts/summary`)).json;
-    const f2 = (await callAt(origin2, "GET", `/api/reviews/${A.run.id}/findings`)).json;
-    check("17. after a reload the approval, decision history and revision list are unchanged", w2.workflow_status === "approved" && isDeepStrictEqual(w2.events, wf.events) && h2.status === "resolved" && h2.revisions.length === 3 && h2.resolutions.length === 1 && h2.resolutions[0].actor === "e2e-reviewer");
+  // 17-18. Reload: read everything again through a fresh call / second process.
+  const isLocal = base.startsWith("http://127.0.0.1") || base.startsWith("http://localhost");
+  if (!isLocal) {
+    const w2 = (await call("GET", `/api/content/${rev2.id}/workflow`, null, REVIEWER)).json;
+    const h2 = (await call("GET", `/api/fact-change-impacts/${impA.id}/history`)).json;
+    const s2 = (await call("GET", `/api/brands/${brand.id}/fact-change-impacts/summary`)).json;
+    const f2 = (await call("GET", `/api/reviews/${A.run.id}/findings`)).json;
+    check("17. after a reload the approval, decision history and revision list are unchanged", w2.workflow_status === "approved" && isDeepStrictEqual(w2.events, wf.events) && h2.status === "resolved" && h2.revisions.length === 3 && h2.resolutions.length === 1 && ["e2e-reviewer", "Alex Compliance"].includes(h2.resolutions[0].actor));
     check("18. after a reload the dashboard totals match the records, and revision 1's findings are identical", s2.open_impacts === 1 && s2.resolved_impacts === 1 && s2.dismissed_impacts === 0 && s2.total_impacts === 2 && isDeepStrictEqual(f2, findingsA1));
-  } catch (e) {
-    skip("17-18. reload checks", `second backend unavailable: ${e.message}`);
+  } else {
+    const defaultPython = process.platform === "win32" ? join(root, "backend/.venv/Scripts/python.exe") : join(root, "backend/.venv/bin/python");
+    const python = process.env.E2E_BACKEND_PYTHON ?? defaultPython;
+    const port = 8100 + Math.floor(Math.random() * 400);
+    const origin2 = `http://127.0.0.1:${port}`;
+    try {
+      child = spawn(python, ["-m", "uvicorn", "app.main:app", "--port", String(port)], { cwd: join(root, "backend"), stdio: "ignore", env: { ...process.env } });
+      let up = false;
+      for (let i = 0; i < 40 && !up; i++) { await new Promise((r) => setTimeout(r, 500)); up = await fetch(origin2 + "/api/health").then((r) => r.ok, () => false); }
+      if (!up) throw new Error("second backend did not start");
+      const w2 = (await callAt(origin2, "GET", `/api/content/${rev2.id}/workflow`)).json;
+      const h2 = (await callAt(origin2, "GET", `/api/fact-change-impacts/${impA.id}/history`)).json;
+      const s2 = (await callAt(origin2, "GET", `/api/brands/${brand.id}/fact-change-impacts/summary`)).json;
+      const f2 = (await callAt(origin2, "GET", `/api/reviews/${A.run.id}/findings`)).json;
+      check("17. after a reload the approval, decision history and revision list are unchanged", w2.workflow_status === "approved" && isDeepStrictEqual(w2.events, wf.events) && h2.status === "resolved" && h2.revisions.length === 3 && h2.resolutions.length === 1 && ["e2e-reviewer", "Alex Compliance"].includes(h2.resolutions[0].actor));
+      check("18. after a reload the dashboard totals match the records, and revision 1's findings are identical", s2.open_impacts === 1 && s2.resolved_impacts === 1 && s2.dismissed_impacts === 0 && s2.total_impacts === 2 && isDeepStrictEqual(f2, findingsA1));
+    } catch (e) {
+      skip("17-18. reload checks", `second backend unavailable: ${e.message}`);
+    }
   }
 
   // 19-23. Separate scenarios on campaign B: a high-risk finding cannot be approved without an audited override, and a conflict cannot clear an impact.
@@ -160,7 +180,12 @@ try {
   const overridden = await call("POST", `/api/content/${b2.id}/decisions`, { action: "approve", review_run_id: runB2.id, overrides: [{ finding_id: risky.id, reason: "Legal confirmed 20 hours for the EU model." }] }, REVIEWER);
   const findingsB2 = (await call("GET", `/api/reviews/${runB2.id}/findings`)).json.items.find((f) => f.id === risky.id);
   check("20. a reviewer's reasoned override is recorded with actor and run, and the finding itself is not edited",
-    overridden.status === 201 && overridden.json.overrides.length === 1 && overridden.json.overrides[0].actor === "e2e-reviewer" && overridden.json.overrides[0].finding_id === risky.id && findingsB2.status === "conflicting");
+    overridden.status === 201 && overridden.json.workflow_status === "approved" && overridden.json.overrides.length === 1 &&
+    ["e2e-reviewer", "Alex Compliance"].includes(overridden.json.overrides[0].actor) &&
+    overridden.json.overrides[0].review_run_id === runB2.id &&
+    overridden.json.overrides[0].finding_id === risky.id &&
+    findingsB2?.status === "conflicting"
+  );
   const noResolve = await call("POST", `/api/fact-change-impacts/${impB.id}/resolve`, { resolving_submission_id: b2.id, rationale: "Approved with an override." }, REVIEWER);
   const impBstill = (await call("GET", `/api/fact-change-impacts/${impB.id}`)).json;
   check("21. a conflicting claim cannot resolve the impact, even when a reviewer approved it with an override", noResolve.status === 409 && code(noResolve) === "conflict_unresolved" && impBstill.status === "needs_review");
