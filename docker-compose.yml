@@ -1,0 +1,42 @@
+# Local full stack: docker compose up --build
+# The database password comes from .env (see .env.example); the fallback is a development placeholder only.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-brandpr}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-brandpr_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-brandpr}
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-brandpr} -d ${POSTGRES_DB:-brandpr}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-brandpr}:${POSTGRES_PASSWORD:-brandpr_dev_password}@db:5432/${POSTGRES_DB:-brandpr}
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      STORAGE_DIR: /data/storage
+    ports: ["8000:8000"]
+    volumes: ["uploads:/data/storage"]
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        BACKEND_URL: http://backend:8000
+    depends_on: [backend]
+    environment:
+      BACKEND_URL: http://backend:8000
+    ports: ["3000:3000"]
+
+volumes:
+  pgdata:
+  uploads:
