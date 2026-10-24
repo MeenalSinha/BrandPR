@@ -17,27 +17,27 @@ brandpr/
 ├── backend/                   Python, FastAPI, SQLAlchemy, PostgreSQL
 │   ├── app/
 │   │   ├── main.py            app factory, CORS, request-id logging
-│   │   ├── api/               routes: health, brands, documents, facts, content, reviews, impacts
+│   │   ├── api/               routes: health, brands, documents, facts, content, reviews, impacts, workflow, guidelines, insights, campaigns
 │   │   ├── core/              config, structured errors, logging, clock
 │   │   ├── db/                declarative base, session
 │   │   ├── models/            SQLAlchemy tables
 │   │   ├── schemas/           Pydantic API contracts (separate from models)
-│   │   ├── services/          business rules: extraction, storage, documents, facts, content, impacts (Phase 3)
+│   │   ├── services/          business rules: extraction, storage, documents, facts, content, impacts, workflow, guidelines, sandbox, insights, campaigns
 │   │   │   └── review/        Phase 2 pipeline: claims, retrieval, matching, terminology, evidence, providers, pipeline
 │   │   └── scripts/           seed.py, make_test_data.py
-│   ├── alembic/               migrations (0001 Phase 1, 0002 Phase 2, 0003 Phase 3)
-│   ├── tests/                 pytest suite against real PostgreSQL
+│   ├── alembic/               migrations (0001 Phase 1 through 0006 Phase 6)
+│   ├── tests/                 pytest suite against real PostgreSQL (Phases 0-6)
 │   ├── requirements*.txt
 │   └── Dockerfile
 ├── frontend/                  Next.js 15, React 19, TypeScript, Tailwind
-│   ├── app/                   pages: /knowledge, /facts, /review, /fact-changes
-│   ├── components/            shell, facts, documents, source viewer
+│   ├── app/                   pages: /knowledge, /facts, /review, /fact-changes, /guidelines, /sandbox, /insights, /campaigns
+│   ├── components/            shell, facts, documents, source viewer, workflow, guidelines, campaigns
 │   ├── lib/                   API client, formatting, hooks
 │   ├── types/api.ts           types mirroring backend schemas
 │   └── tests/                 Vitest component tests
 ├── test-data/                 fictional Nova Systems PDF, TXT, CSV and bad-file samples
 ├── docs/                      DATA_MODEL.md, API.md, TESTING.md
-└── scripts/                   verify.sh, e2e_live.mjs, e2e_review.mjs, e2e_fact_impacts.mjs
+└── scripts/                   verify.sh, e2e_live.mjs, e2e_review.mjs, e2e_fact_impacts.mjs, e2e_workflow.mjs, e2e_guidelines.mjs, e2e_campaigns.mjs
 ```
 
 ## Run it

@@ -241,7 +241,7 @@ def post_release_evaluation(campaign_id: uuid.UUID, db: DbSession):
 @router.post(
     "/campaigns/{campaign_id}/release",
     response_model=CampaignReleaseOut,
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_200_OK,
     summary="Explicitly release a verified campaign (reviewer only)",
 )
 def release_campaign(
