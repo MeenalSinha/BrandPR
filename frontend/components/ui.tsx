@@ -37,45 +37,45 @@ export function Dialog({
 
   const drawer = variant === "drawer";
   return (
-    <div className={`fixed inset-0 z-40 flex bg-ink/45 ${drawer ? "justify-end" : "items-start justify-center overflow-y-auto px-4 py-10"}`}
+    <div className={`fixed inset-0 z-40 flex bg-ink/40 backdrop-blur-sm transition-opacity duration-150 ${drawer ? "justify-end" : "items-start justify-center overflow-y-auto px-4 py-12"}`}
          onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div ref={panel} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}
-           className={drawer ? "drawer-panel flex h-full w-full max-w-[760px] flex-col bg-sheet shadow-xl" : "w-full max-w-[640px] rounded-lg bg-sheet shadow-xl"}>
-        <header className="flex items-start justify-between gap-4 border-b border-rule px-6 py-4">
+           className={drawer ? "drawer-panel flex h-full w-full max-w-[760px] flex-col border-l border-rule bg-sheet shadow-dialog" : "w-full max-w-[620px] rounded-xl border border-rule bg-sheet shadow-dialog"}>
+        <header className="flex items-start justify-between gap-4 border-b border-rule/80 px-6 py-4.5 bg-paper/40">
           <div>
-            <h2 id={titleId} className="text-xl font-semibold">{title}</h2>
+            <h2 id={titleId} className="text-xl font-semibold text-ink">{title}</h2>
             {description && <p className="mt-1 text-sm text-ink-soft">{description}</p>}
           </div>
-          <button type="button" data-close onClick={onClose} className="btn btn-quiet" aria-label="Close dialog">Close</button>
+          <button type="button" data-close onClick={onClose} className="btn btn-quiet text-xs uppercase tracking-wider font-semibold" aria-label="Close dialog">Close</button>
         </header>
         <div className={`px-6 py-5 ${drawer ? "flex-1 overflow-y-auto" : ""}`}>{children}</div>
-        {footer && <footer className="flex flex-wrap items-center justify-end gap-3 border-t border-rule px-6 py-4">{footer}</footer>}
+        {footer && <footer className="flex flex-wrap items-center justify-end gap-3 border-t border-rule/80 px-6 py-4 bg-paper/30">{footer}</footer>}
       </div>
     </div>
   );
 }
 
 const EFFECTIVE_STYLE: Record<EffectiveState, string> = {
-  current: "bg-state-current-wash text-state-current",
-  pending: "bg-state-pending-wash text-state-pending",
-  expired: "bg-state-expired-wash text-state-expired",
-  unapproved: "bg-state-unapproved-wash text-state-unapproved",
-  retired: "bg-state-retired-wash text-state-retired",
+  current: "bg-state-current-wash text-state-current border-state-current-border",
+  pending: "bg-state-pending-wash text-state-pending border-state-pending-border",
+  expired: "bg-state-expired-wash text-state-expired border-state-expired-border",
+  unapproved: "bg-state-unapproved-wash text-state-unapproved border-state-unapproved-border",
+  retired: "bg-state-retired-wash text-state-retired border-state-retired-border",
 };
 
 export function EffectiveBadge({ state }: { state: EffectiveState }) {
-  return <span data-testid="effective-badge" className={`inline-block rounded px-2 py-0.5 text-sm font-bold ${EFFECTIVE_STYLE[state]}`}>{EFFECTIVE_LABELS[state]}</span>;
+  return <span data-testid="effective-badge" className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold tracking-wide ${EFFECTIVE_STYLE[state]}`}><span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />{EFFECTIVE_LABELS[state]}</span>;
 }
 
 const PROCESSING_STYLE: Record<ProcessingStatus, string> = {
-  pending: "bg-state-pending-wash text-state-pending",
-  processing: "bg-state-pending-wash text-state-pending",
-  processed: "bg-state-current-wash text-state-current",
-  failed: "bg-state-expired-wash text-state-expired",
+  pending: "bg-state-pending-wash text-state-pending border-state-pending-border",
+  processing: "bg-state-pending-wash text-state-pending border-state-pending-border",
+  processed: "bg-state-current-wash text-state-current border-state-current-border",
+  failed: "bg-state-expired-wash text-state-expired border-state-expired-border",
 };
 
 export function ProcessingBadge({ status }: { status: ProcessingStatus }) {
-  return <span data-testid="processing-badge" className={`inline-block rounded px-2 py-0.5 text-sm font-bold ${PROCESSING_STYLE[status]}`}>{PROCESSING_LABELS[status]}</span>;
+  return <span data-testid="processing-badge" className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold tracking-wide ${PROCESSING_STYLE[status]}`}><span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />{PROCESSING_LABELS[status]}</span>;
 }
 
 export function Notice({ kind, children, action }: { kind: "error" | "success" | "info" | "warning"; children: ReactNode; action?: ReactNode }) {
@@ -86,25 +86,33 @@ export function Notice({ kind, children, action }: { kind: "error" | "success" |
     warning: "border-state-unapproved bg-state-unapproved-wash text-state-unapproved",
   }[kind];
   return (
-    <div role={kind === "error" ? "alert" : "status"} className={`flex items-start justify-between gap-4 rounded-md border-l-4 px-4 py-3 text-sm font-bold ${style}`}>
-      <div>{children}</div>
-      {action}
+    <div role={kind === "error" ? "alert" : "status"} className={`flex items-start justify-between gap-4 rounded-lg border-l-4 px-4 py-3 text-sm font-semibold shadow-subtle ${style}`}>
+      <div className="flex-1">{children}</div>
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }
 
 export function EmptyState({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
   return (
-    <div data-testid="empty-state" className="border border-dashed border-rule-strong bg-sheet px-6 py-12 text-center">
-      <h3 className="text-xl font-semibold">{title}</h3>
-      {children && <p className="mx-auto mt-2 max-w-[52ch] text-ink-soft">{children}</p>}
+    <div data-testid="empty-state" className="rounded-xl border border-dashed border-rule bg-sheet px-6 py-12 text-center shadow-subtle">
+      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-paper text-ink-faint">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <h3 className="text-lg font-semibold text-ink">{title}</h3>
+      {children && <p className="mx-auto mt-2 max-w-[50ch] text-sm text-ink-soft leading-relaxed">{children}</p>}
       {action && <div className="mt-5 flex justify-center gap-3">{action}</div>}
     </div>
   );
 }
 
 export function Loading({ label = "Loading" }: { label?: string }) {
-  return <p role="status" className="px-1 py-8 text-ink-soft">{label}...</p>;
+  return (
+    <div role="status" className="flex items-center gap-2 px-1 py-8 text-sm text-ink-soft">
+      <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-signal border-t-transparent" aria-hidden />
+      <span>{label}...</span>
+    </div>
+  );
 }
 
 export function Field({ label, error, hint, children, htmlFor }: { label: string; error?: string; hint?: string; children: ReactNode; htmlFor: string }) {

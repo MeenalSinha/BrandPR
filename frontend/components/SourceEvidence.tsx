@@ -10,7 +10,15 @@ import type { DocumentSection } from "@/types/api";
 function Highlighted({ text, excerpt }: { text: string; excerpt?: string | null }) {
   return (
     <>
-      {splitByExcerpt(text, excerpt).map((part, i) => (part.hit ? <mark key={i} data-testid="excerpt-mark">{part.text}</mark> : <span key={i}>{part.text}</span>))}
+      {splitByExcerpt(text, excerpt).map((part, i) =>
+        part.hit ? (
+          <mark key={i} data-testid="excerpt-mark" className="bg-signal-wash text-signal-dark font-semibold px-1 py-0.5 rounded border-b-2 border-signal">
+            {part.text}
+          </mark>
+        ) : (
+          <span key={i}>{part.text}</span>
+        )
+      )}
     </>
   );
 }
@@ -35,42 +43,48 @@ export function SourceEvidence({ documentId, page, excerpt }: { documentId: stri
   );
 
   if (doc.loading) return <Loading label="Loading source" />;
-  if (doc.error || !doc.data) return <Notice kind="error" action={<button className="btn btn-secondary" onClick={doc.reload}>Try again</button>}>{doc.error ? errorMessage(doc.error) : "Source not found."}</Notice>;
+  if (doc.error || !doc.data) return <Notice kind="error" action={<button className="btn btn-secondary text-xs" onClick={doc.reload}>Try again</button>}>{doc.error ? errorMessage(doc.error) : "Source not found."}</Notice>;
   const d = doc.data;
   if (d.processing_status !== "processed") {
     return <Notice kind="error">{d.title} has no readable text{d.error_message ? `: ${d.error_message}` : "."}</Notice>;
   }
 
   return (
-    <section aria-label="Source evidence" data-testid="source-evidence">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <section aria-label="Source evidence" data-testid="source-evidence" className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-rule bg-paper">
         <div>
-          <h3 className="text-lg font-semibold">{d.title}</h3>
-          <p className="text-sm text-ink-soft">{d.filename}{d.archived_at ? " (archived)" : ""}</p>
+          <h3 className="font-serif text-base font-bold text-ink">{d.title}</h3>
+          <p className="text-xs text-ink-muted">{d.filename}{d.archived_at ? " (archived)" : ""}</p>
         </div>
         <div className="flex items-center gap-2">
           <ProcessingBadge status={d.processing_status} />
-          {isPdf && <a className="btn btn-secondary" target="_blank" rel="noreferrer" href={api.fileUrl(d.id, true, pageNo)}>Open original at page {pageNo}</a>}
-          <a className="btn btn-secondary" href={api.fileUrl(d.id)}>Download</a>
+          {isPdf && (
+            <a className="btn btn-secondary text-xs" target="_blank" rel="noreferrer" href={api.fileUrl(d.id, true, pageNo)}>
+              Open original at page {pageNo}
+            </a>
+          )}
+          <a className="btn btn-secondary text-xs" href={api.fileUrl(d.id)}>Download</a>
         </div>
       </div>
 
       {isPdf && d.page_count ? (
-        <div className="mt-4 flex items-center gap-3" role="group" aria-label="PDF page">
-          <button className="btn btn-secondary" disabled={pageNo <= 1} onClick={() => setPageNo(pageNo - 1)}>Previous page</button>
-          <span aria-live="polite" className="text-sm font-bold">Page {pageNo} of {d.page_count}</span>
-          <button className="btn btn-secondary" disabled={pageNo >= d.page_count} onClick={() => setPageNo(pageNo + 1)}>Next page</button>
+        <div className="flex items-center gap-3 bg-sheet p-2 rounded-lg border border-rule w-fit" role="group" aria-label="PDF page">
+          <button className="btn btn-secondary text-xs py-1 px-2.5" disabled={pageNo <= 1} onClick={() => setPageNo(pageNo - 1)}>Previous page</button>
+          <span aria-live="polite" className="text-xs font-semibold text-ink px-1">Page {pageNo} of {d.page_count}</span>
+          <button className="btn btn-secondary text-xs py-1 px-2.5" disabled={pageNo >= d.page_count} onClick={() => setPageNo(pageNo + 1)}>Next page</button>
         </div>
       ) : null}
 
-      <div className="mt-4 space-y-4">
+      <div className="space-y-3">
         {sections.loading && <Loading label="Loading text" />}
         {sections.error && <Notice kind="error">{errorMessage(sections.error)}</Notice>}
-        {sections.data?.items.length === 0 && <p className="text-ink-soft">No text was extracted for this location.</p>}
+        {sections.data?.items.length === 0 && <p className="text-xs text-ink-muted italic">No text was extracted for this location.</p>}
         {sections.data?.items.map((s) => (
-          <article key={s.id} className="border-l-4 border-rule-strong bg-paper px-4 py-3">
-            <h4 className="mb-1 text-sm font-bold text-ink-soft">{sectionLabel(s)}</h4>
-            <p className="whitespace-pre-wrap font-serif text-[17px] leading-relaxed"><Highlighted text={s.text || "(This page has no extractable text.)"} excerpt={excerpt} /></p>
+          <article key={s.id} className="rounded-xl border border-rule bg-sheet p-4 space-y-1.5 shadow-xs">
+            <h4 className="text-[11px] font-semibold uppercase tracking-wider text-signal">{sectionLabel(s)}</h4>
+            <p className="whitespace-pre-wrap font-serif text-sm leading-relaxed text-ink">
+              <Highlighted text={s.text || "(This page has no extractable text.)"} excerpt={excerpt} />
+            </p>
           </article>
         ))}
       </div>

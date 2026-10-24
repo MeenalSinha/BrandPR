@@ -8,12 +8,12 @@ import type {
   Campaign,
   CampaignAsset,
   CampaignAudit,
-  CampaignAuditFinding,
   ChannelRole,
   ContentSummary,
   ReleaseEvaluation,
 } from "@/types/api";
 import { EmptyState } from "@/components/ui";
+import { IconCheck, IconAlert, IconCampaigns, IconPlus, IconExternalLink } from "@/components/Icons";
 
 const CHANNEL_ROLES: { id: ChannelRole; label: string }[] = [
   { id: "landing_page", label: "Landing Page" },
@@ -151,54 +151,54 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
   }
 
   if (loading) {
-    return <div className="p-12 text-center text-sm text-ink-muted">Loading campaign details...</div>;
+    return <div className="p-12 text-center text-sm text-ink-muted rounded-xl border border-rule bg-sheet">Loading campaign details...</div>;
   }
 
   if (!campaign) {
-    return <div className="p-12 text-center text-sm text-red-600">Campaign not found.</div>;
+    return <div className="p-12 text-center text-sm text-terracotta rounded-xl border border-terracotta/30 bg-terracotta-soft">Campaign not found.</div>;
   }
 
   return (
     <div className="space-y-6">
       {/* Back Link & Header */}
-      <div className="space-y-2">
-        <Link href="/campaigns" className="text-xs text-brand-primary hover:underline font-medium">
-          ← Back to Campaigns
+      <div className="space-y-3">
+        <Link href="/campaigns" className="inline-flex items-center gap-1.5 text-xs text-signal hover:text-signal-dark font-medium transition">
+          <span>&larr; Back to Campaigns</span>
         </Link>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border-base pb-4">
-          <div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between border-b border-rule pb-5">
+          <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold tracking-tight text-ink-base">
+              <h1 className="text-2xl font-serif font-bold tracking-tight text-ink">
                 {campaign.title}
               </h1>
-              <span className="px-2.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wider border bg-surface-200 text-ink-base border-border-base">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider border bg-surface-100 text-ink border-rule">
                 {campaign.status.replace(/_/g, " ")}
               </span>
             </div>
             {campaign.description && (
-              <p className="text-sm text-ink-muted mt-1">{campaign.description}</p>
+              <p className="text-sm text-ink-muted max-w-3xl leading-relaxed">{campaign.description}</p>
             )}
-            <div className="flex items-center gap-4 text-xs text-ink-muted mt-2">
-              {campaign.owner && <span>Owner: <strong>{campaign.owner}</strong></span>}
-              {campaign.external_reference && <span>Ref: <strong>{campaign.external_reference}</strong></span>}
+            <div className="flex flex-wrap items-center gap-4 text-xs text-ink-muted pt-1">
+              {campaign.owner && <span>Owner: <strong className="text-ink font-semibold">{campaign.owner}</strong></span>}
+              {campaign.external_reference && <span>Ref: <strong className="text-ink font-semibold font-mono">{campaign.external_reference}</strong></span>}
               <span>Created: {new Date(campaign.created_at).toLocaleDateString()}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <button
               onClick={handleRunAudit}
               disabled={auditing}
-              className="px-4 py-2 bg-brand-primary text-white rounded-md text-xs font-medium hover:bg-brand-primary/90 transition shadow-sm disabled:opacity-50"
+              className="btn btn-primary text-xs shadow-subtle flex items-center gap-1.5 disabled:opacity-50"
             >
-              {auditing ? "Auditing Portfolio..." : "⚡ Run Campaign Audit"}
+              <span>{auditing ? "Auditing Portfolio..." : "⚡ Run Campaign Audit"}</span>
             </button>
             {evaluation?.can_release && campaign.status !== "released" && (
               <button
                 onClick={() => setShowReleaseModal(true)}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-md text-xs font-semibold hover:bg-emerald-700 transition shadow-sm"
+                className="btn bg-signal text-white hover:bg-signal-dark text-xs font-semibold shadow-subtle flex items-center gap-1.5"
               >
-                🚀 Release Campaign
+                <span>🚀 Release Campaign</span>
               </button>
             )}
           </div>
@@ -208,44 +208,44 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
       {/* Release Readiness Banner */}
       {evaluation && (
         <div
-          className={`p-4 rounded-lg border text-sm space-y-2 ${
+          className={`p-5 rounded-xl border text-sm space-y-3 shadow-subtle transition-all ${
             campaign.status === "released"
-              ? "bg-indigo-50 border-indigo-200 text-indigo-900"
+              ? "bg-blue-50/70 border-blue-200 text-blue-950"
               : evaluation.can_release
-              ? "bg-emerald-50 border-emerald-200 text-emerald-950"
+              ? "bg-signal-wash border-signal/30 text-signal-dark"
               : evaluation.is_stale
-              ? "bg-amber-50 border-amber-200 text-amber-950"
-              : "bg-red-50 border-red-200 text-red-950"
+              ? "bg-amber-50/80 border-amber-200 text-amber-950"
+              : "bg-terracotta-soft border-terracotta/30 text-terracotta"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-base flex items-center gap-2">
+            <span className="font-serif font-bold text-base flex items-center gap-2">
               {campaign.status === "released" && "✓ Campaign Released"}
-              {campaign.status !== "released" && evaluation.can_release && "✓ Release Ready"}
-              {campaign.status !== "released" && evaluation.is_stale && "⚠️ Audit Stale"}
-              {campaign.status !== "released" && !evaluation.can_release && !evaluation.is_stale && "⛔ Release Blocked"}
+              {campaign.status !== "released" && evaluation.can_release && "✓ Release Ready — All Checks Passed"}
+              {campaign.status !== "released" && evaluation.is_stale && "⚠️ Audit Stale — Re-evaluation Required"}
+              {campaign.status !== "released" && !evaluation.can_release && !evaluation.is_stale && "⛔ Release Blocked — Integrity Checks Failed"}
             </span>
-            <span className="text-xs">
-              {latestAudit ? `Audit #${latestAudit.audit_number} on ${new Date(latestAudit.created_at).toLocaleTimeString()}` : "Never audited"}
+            <span className="text-xs font-mono opacity-80">
+              {latestAudit ? `Audit #${latestAudit.audit_number} • ${new Date(latestAudit.created_at).toLocaleTimeString()}` : "Never audited"}
             </span>
           </div>
 
           {evaluation.blockers.length > 0 ? (
-            <div className="space-y-1 pt-1">
-              <span className="text-xs font-medium uppercase tracking-wider">Release Blockers:</span>
-              <ul className="list-disc pl-5 text-xs space-y-0.5">
+            <div className="space-y-1.5 pt-1">
+              <span className="text-xs font-semibold uppercase tracking-wider">Release Blockers:</span>
+              <ul className="list-disc pl-5 text-xs space-y-1">
                 {evaluation.blockers.map((b, i) => (
-                  <li key={i}>{b}</li>
+                  <li key={i} className="font-medium">{b}</li>
                 ))}
               </ul>
             </div>
           ) : campaign.status === "released" ? (
-            <p className="text-xs">
-              Released by {campaign.released_by} on {new Date(campaign.released_at!).toLocaleString()}.
+            <p className="text-xs opacity-90">
+              Released by <strong className="font-semibold">{campaign.released_by}</strong> on {new Date(campaign.released_at!).toLocaleString()}.
             </p>
           ) : (
-            <p className="text-xs">
-              All portfolio consistency, fact integrity, and approval checks have passed for this campaign.
+            <p className="text-xs opacity-90 leading-relaxed">
+              All portfolio consistency, fact integrity, and approval checks have passed for this campaign. The portfolio is certified for external publication.
             </p>
           )}
         </div>
@@ -254,14 +254,18 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
       {/* Assets Section */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink-base">
-            Campaign Assets ({assets.length})
-          </h2>
+          <div>
+            <h2 className="text-lg font-serif font-bold text-ink">
+              Campaign Assets ({assets.length})
+            </h2>
+            <p className="text-xs text-ink-muted">Assets included in this campaign for cross-channel consistency audit.</p>
+          </div>
           <button
             onClick={openAddModal}
-            className="px-3 py-1.5 border border-border-base rounded-md text-xs font-medium hover:bg-surface-200 transition"
+            className="btn btn-secondary text-xs flex items-center gap-1.5"
           >
-            + Add Asset
+            <IconPlus className="w-3.5 h-3.5" />
+            <span>+ Add Asset</span>
           </button>
         </div>
 
@@ -270,48 +274,53 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
             Add marketing content assets (landing page, ad, email, etc.) to evaluate consistency and release readiness.
           </EmptyState>
         ) : (
-          <div className="border border-border-base rounded-lg overflow-hidden bg-surface-base">
+          <div className="border border-rule rounded-xl overflow-hidden bg-sheet shadow-subtle">
             <table className="w-full text-left text-xs">
-              <thead className="bg-surface-100 text-ink-muted uppercase border-b border-border-base">
+              <thead className="bg-paper text-ink-muted uppercase border-b border-rule">
                 <tr>
-                  <th className="py-2.5 px-4 font-medium">Asset Title</th>
-                  <th className="py-2.5 px-4 font-medium">Channel / Role</th>
-                  <th className="py-2.5 px-4 font-medium">Revision</th>
-                  <th className="py-2.5 px-4 font-medium">Workflow Status</th>
-                  <th className="py-2.5 px-4 font-medium text-right">Actions</th>
+                  <th className="py-3 px-4 font-semibold tracking-wider">Asset Title</th>
+                  <th className="py-3 px-4 font-semibold tracking-wider">Channel / Role</th>
+                  <th className="py-3 px-4 font-semibold tracking-wider">Revision</th>
+                  <th className="py-3 px-4 font-semibold tracking-wider">Workflow Status</th>
+                  <th className="py-3 px-4 font-semibold tracking-wider text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border-base">
+              <tbody className="divide-y divide-rule">
                 {assets.map((a) => (
-                  <tr key={a.id} className="hover:bg-surface-50 transition">
-                    <td className="py-3 px-4 font-medium text-ink-base">
-                      <Link href={`/review?content_id=${a.selected_submission_id}`} className="hover:text-brand-primary">
+                  <tr key={a.id} className="hover:bg-paper/50 transition">
+                    <td className="py-3.5 px-4 font-medium text-ink">
+                      <Link href={`/review?content_id=${a.selected_submission_id}`} className="hover:text-signal transition font-semibold">
                         {a.asset_title || "Untitled Asset"}
                       </Link>
                     </td>
-                    <td className="py-3 px-4 capitalize text-ink-muted">
-                      {a.channel_role.replace(/_/g, " ")}
+                    <td className="py-3.5 px-4 capitalize text-ink-muted font-medium">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded bg-surface-100 border border-rule text-ink">
+                        {a.channel_role.replace(/_/g, " ")}
+                      </span>
                     </td>
-                    <td className="py-3 px-4 font-mono text-ink-muted">
+                    <td className="py-3.5 px-4 font-mono text-ink-muted font-semibold">
                       v{a.revision_number}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3.5 px-4">
                       <span
-                        className={`px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider border ${
                           a.workflow_status === "approved"
-                            ? "bg-emerald-100 text-emerald-800"
+                            ? "bg-signal-wash text-signal-dark border-signal/30"
                             : a.workflow_status === "in_review"
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-surface-200 text-ink-muted"
+                            ? "bg-amber-50 text-amber-800 border-amber-200"
+                            : "bg-surface-100 text-ink-muted border-rule"
                         }`}
                       >
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          a.workflow_status === "approved" ? "bg-signal" : a.workflow_status === "in_review" ? "bg-amber-500" : "bg-ink-muted"
+                        }`} />
                         {a.workflow_status.replace(/_/g, " ")}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3.5 px-4 text-right">
                       <button
                         onClick={() => handleRemoveAsset(a.asset_id)}
-                        className="text-red-600 hover:text-red-800 font-medium text-xs"
+                        className="text-terracotta hover:underline font-semibold text-xs"
                       >
                         Remove
                       </button>
@@ -326,92 +335,108 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
 
       {/* Latest Audit Findings */}
       {latestAudit && latestAudit.findings && latestAudit.findings.length > 0 && (
-        <div className="space-y-3 pt-4 border-t border-border-base">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-ink-base">
-              Audit Findings ({latestAudit.findings.length})
-            </h2>
-            <div className="flex items-center gap-3 text-xs text-ink-muted">
-              <span>Blockers: <strong className="text-red-600">{latestAudit.blocker_count}</strong></span>
-              <span>Warnings: <strong className="text-amber-600">{latestAudit.warning_count}</strong></span>
-              <span>Passed: <strong className="text-emerald-600">{latestAudit.passed_checks_count}</strong></span>
+        <div className="space-y-4 pt-4 border-t border-rule">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-serif font-bold text-ink">
+                Audit Findings ({latestAudit.findings.length})
+              </h2>
+              <p className="text-xs text-ink-muted">Detailed cross-asset claims, conflicts, and verification checks.</p>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="px-2.5 py-1 rounded-md bg-terracotta-soft text-terracotta border border-terracotta/20 font-medium">
+                Blockers: <strong className="font-bold">{latestAudit.blocker_count}</strong>
+              </span>
+              <span className="px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-200 font-medium">
+                Warnings: <strong className="font-bold">{latestAudit.warning_count}</strong>
+              </span>
+              <span className="px-2.5 py-1 rounded-md bg-signal-wash text-signal-dark border border-signal/20 font-medium">
+                Passed: <strong className="font-bold">{latestAudit.passed_checks_count}</strong>
+              </span>
             </div>
           </div>
 
           <div className="space-y-3">
-            {latestAudit.findings.map((f) => (
-              <div
-                key={f.id}
-                className={`p-4 rounded-lg border text-xs space-y-2 ${
-                  f.severity === "hard_blocker"
-                    ? "border-red-200 bg-red-50/50"
-                    : f.severity === "warning"
-                    ? "border-amber-200 bg-amber-50/50"
-                    : "border-border-base bg-surface-50"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`px-2 py-0.5 rounded font-semibold text-[10px] uppercase tracking-wider ${
-                        f.severity === "hard_blocker"
-                          ? "bg-red-200 text-red-900"
-                          : f.severity === "warning"
-                          ? "bg-amber-200 text-amber-900"
-                          : "bg-surface-200 text-ink-base"
-                      }`}
-                    >
-                      {f.severity.replace(/_/g, " ")}
-                    </span>
-                    <span className="font-semibold text-ink-base">
-                      {f.finding_type.replace(/_/g, " ").toUpperCase()}
-                    </span>
-                    {f.asset_title && (
-                      <span className="text-ink-muted">
-                        • Asset: <strong>{f.asset_title}</strong> (v{f.revision_number})
+            {latestAudit.findings.map((f) => {
+              const isBlocker = f.severity === "hard_blocker";
+              const isWarning = f.severity === "warning";
+              return (
+                <div
+                  key={f.id}
+                  className={`p-4 rounded-xl border text-xs space-y-2.5 transition ${
+                    isBlocker
+                      ? "border-terracotta/40 bg-terracotta-soft/50"
+                      : isWarning
+                      ? "border-amber-200 bg-amber-50/50"
+                      : "border-rule bg-sheet"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className={`px-2 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wider border ${
+                          isBlocker
+                            ? "bg-terracotta text-white border-terracotta"
+                            : isWarning
+                            ? "bg-amber-100 text-amber-900 border-amber-300"
+                            : "bg-surface-100 text-ink border-rule"
+                        }`}
+                      >
+                        {f.severity.replace(/_/g, " ")}
                       </span>
+                      <span className="font-serif font-bold text-ink">
+                        {f.finding_type.replace(/_/g, " ").toUpperCase()}
+                      </span>
+                      {f.asset_title && (
+                        <span className="text-ink-muted">
+                          &bull; Asset: <strong className="text-ink font-semibold">{f.asset_title}</strong> (v{f.revision_number})
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-ink-muted capitalize text-[11px] font-mono px-2 py-0.5 rounded bg-paper border border-rule">
+                      {f.confidence} confidence
+                    </span>
+                  </div>
+
+                  {f.claim_text && (
+                    <div className="p-2.5 bg-sheet rounded-lg border border-rule/80 font-mono text-[11px] text-ink leading-relaxed">
+                      &ldquo;{f.claim_text}&rdquo;
+                    </div>
+                  )}
+
+                  <p className="text-ink font-medium leading-relaxed">{f.explanation}</p>
+
+                  <div className="pt-2 border-t border-rule/50 flex flex-wrap items-center justify-between gap-2 text-ink-muted text-[11px]">
+                    <span>Action: <strong className="text-ink">{f.recommended_action}</strong></span>
+                    {f.source_page && (
+                      <span className="font-mono">Source Page: {f.source_page}</span>
                     )}
                   </div>
-                  <span className="text-ink-muted capitalize text-[11px] font-mono">
-                    {f.confidence}
-                  </span>
                 </div>
-
-                {f.claim_text && (
-                  <div className="p-2 bg-surface-base rounded border border-border-base/70 font-mono text-[11px]">
-                    "{f.claim_text}"
-                  </div>
-                )}
-
-                <p className="text-ink-base font-medium">{f.explanation}</p>
-
-                <div className="pt-2 border-t border-border-base/40 flex items-center justify-between text-ink-muted text-[11px]">
-                  <span>Action: {f.recommended_action}</span>
-                  {f.source_page && (
-                    <span>Source Page: {f.source_page}</span>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
 
       {/* Add Asset Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-surface-base border border-border-base rounded-lg shadow-xl p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-ink-base">Add Asset to Campaign</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md bg-sheet border border-rule rounded-xl shadow-overlay p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div>
+              <h2 className="text-lg font-serif font-bold text-ink">Add Asset to Campaign</h2>
+              <p className="text-xs text-ink-muted mt-0.5">Select content from the brand repository to bind to this portfolio.</p>
+            </div>
             <form onSubmit={handleAddAsset} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-ink-muted mb-1">
+                <label className="block text-xs font-semibold text-ink mb-1">
                   Select Brand Content Asset *
                 </label>
                 <select
                   required
                   value={selectedAssetId}
                   onChange={(e) => setSelectedAssetId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-border-base rounded-md focus:outline-none focus:border-brand-primary"
+                  className="input text-sm"
                 >
                   {availableContent.map((c) => (
                     <option key={c.id} value={c.asset_id}>
@@ -422,13 +447,13 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-ink-muted mb-1">
+                <label className="block text-xs font-semibold text-ink mb-1">
                   Channel / Role
                 </label>
                 <select
                   value={selectedRole}
                   onChange={(e) => setSelectedRole(e.target.value as ChannelRole)}
-                  className="w-full px-3 py-2 text-sm border border-border-base rounded-md focus:outline-none focus:border-brand-primary"
+                  className="input text-sm"
                 >
                   {CHANNEL_ROLES.map((r) => (
                     <option key={r.id} value={r.id}>
@@ -438,18 +463,18 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                 </select>
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex justify-end gap-3 pt-3 border-t border-rule">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 border border-border-base rounded-md text-xs font-medium hover:bg-surface-200 transition"
+                  className="btn btn-secondary text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={addingAsset || !selectedAssetId}
-                  className="px-4 py-2 bg-brand-primary text-white rounded-md text-xs font-medium hover:bg-brand-primary/90 transition disabled:opacity-50"
+                  className="btn btn-primary text-xs disabled:opacity-50"
                 >
                   {addingAsset ? "Adding..." : "Add Asset"}
                 </button>
@@ -461,15 +486,17 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
 
       {/* Release Modal */}
       {showReleaseModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-surface-base border border-border-base rounded-lg shadow-xl p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-ink-base">Release Campaign</h2>
-            <p className="text-xs text-ink-muted">
-              You are certifying that all marketing assets in this campaign are approved, consistent, and ready for publication.
-            </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md bg-sheet border border-rule rounded-xl shadow-overlay p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div>
+              <h2 className="text-lg font-serif font-bold text-ink">Release Campaign</h2>
+              <p className="text-xs text-ink-muted mt-1 leading-relaxed">
+                You are certifying that all marketing assets in this campaign are approved, consistent, and ready for publication.
+              </p>
+            </div>
             <form onSubmit={handleReleaseCampaign} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-ink-muted mb-1">
+                <label className="block text-xs font-semibold text-ink mb-1">
                   Release Notes
                 </label>
                 <textarea
@@ -477,22 +504,22 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                   value={releaseNotes}
                   onChange={(e) => setReleaseNotes(e.target.value)}
                   placeholder="e.g. Q4 Global Release certified by Brand Reviewer."
-                  className="w-full px-3 py-2 text-sm border border-border-base rounded-md focus:outline-none focus:border-brand-primary"
+                  className="input text-sm"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex justify-end gap-3 pt-3 border-t border-rule">
                 <button
                   type="button"
                   onClick={() => setShowReleaseModal(false)}
-                  className="px-4 py-2 border border-border-base rounded-md text-xs font-medium hover:bg-surface-200 transition"
+                  className="btn btn-secondary text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={releasing}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-md text-xs font-semibold hover:bg-emerald-700 transition disabled:opacity-50"
+                  className="btn bg-signal text-white hover:bg-signal-dark text-xs font-semibold disabled:opacity-50"
                 >
                   {releasing ? "Releasing..." : "Confirm Release"}
                 </button>

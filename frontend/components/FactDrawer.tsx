@@ -44,67 +44,103 @@ export function FactDrawer({ fact, actor, onClose, onEdit, onChanged }: {
     }
   }
 
-  const dl = "grid grid-cols-[150px_1fr] gap-x-4 gap-y-2 text-[15px]";
+  const dl = "grid grid-cols-[140px_1fr] gap-x-4 gap-y-2 text-xs bg-paper/60 p-4 rounded-xl border border-rule";
   return (
     <Dialog variant="drawer" title={fact.name} onClose={onClose} description={CATEGORY_LABELS[fact.category]}
-      footer={<button className="btn btn-secondary" onClick={() => onEdit(fact)}>Edit fact</button>}>
-      <div className="space-y-8">
+      footer={<button className="btn btn-secondary text-xs" onClick={() => onEdit(fact)}>Edit fact</button>}>
+      <div className="space-y-6">
         <div>
-          <p className="font-serif text-3xl font-semibold" data-testid="drawer-value">{fact.value}{fact.unit ? <span className="ml-1 text-xl text-ink-soft">{fact.unit}</span> : null}</p>
-          {fact.qualifications && <p className="mt-2 max-w-[60ch] text-ink-soft">{fact.qualifications}</p>}
-          <div className="mt-3 flex flex-wrap items-center gap-3"><EffectiveBadge state={fact.effective_state} /><span className="text-sm font-bold">{STATUS_LABELS[fact.status]}</span></div>
+          <p className="font-serif text-3xl font-bold text-ink" data-testid="drawer-value">
+            {fact.value}{fact.unit ? <span className="ml-1 text-xl font-normal text-ink-muted">{fact.unit}</span> : null}
+          </p>
+          {fact.qualifications && <p className="mt-2 max-w-[60ch] text-xs text-ink-muted leading-relaxed">{fact.qualifications}</p>}
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <EffectiveBadge state={fact.effective_state} />
+            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-surface-100 text-ink border border-rule">{STATUS_LABELS[fact.status]}</span>
+          </div>
         </div>
 
-        {fact.warnings.length > 0 && <div className="space-y-2">{fact.warnings.map((w) => <Notice key={w} kind="warning">{WARNING_LABELS[w] ?? w}</Notice>)}</div>}
+        {fact.warnings.length > 0 && (
+          <div className="space-y-2">
+            {fact.warnings.map((w) => <Notice key={w} kind="warning">{WARNING_LABELS[w] ?? w}</Notice>)}
+          </div>
+        )}
 
-        <section aria-label="Status">
+        <section aria-label="Status" className="space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Lifecycle Actions</h3>
           {error && <div className="mb-3"><Notice kind="error">{error}</Notice></div>}
           {pending ? (
-            <form onSubmit={confirm} className="space-y-3 border border-rule-strong p-4">
-              <p className="font-bold">{ACTIONS[fact.status].find((a) => a.to === pending)?.label}</p>
-              <label className="label" htmlFor="status-reason">Reason{NEEDS_REASON.includes(pending) ? "" : " (optional)"}</label>
-              <input id="status-reason" className="input" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={1000} />
-              <div className="flex gap-3"><button className="btn btn-primary" disabled={busy}>{busy ? "Saving" : "Confirm"}</button><button type="button" className="btn btn-secondary" onClick={() => { setPending(null); setError(null); }}>Cancel</button></div>
+            <form onSubmit={confirm} className="space-y-3 border border-rule rounded-xl bg-paper/50 p-4">
+              <p className="font-bold text-sm text-ink">{ACTIONS[fact.status].find((a) => a.to === pending)?.label}</p>
+              <div>
+                <label className="block text-xs font-semibold text-ink mb-1" htmlFor="status-reason">
+                  Reason{NEEDS_REASON.includes(pending) ? " *" : " (optional)"}
+                </label>
+                <input id="status-reason" className="input text-xs" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={1000} placeholder="Why is this change being made?" />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button className="btn btn-primary text-xs" disabled={busy}>{busy ? "Saving..." : "Confirm"}</button>
+                <button type="button" className="btn btn-secondary text-xs" onClick={() => { setPending(null); setError(null); }}>Cancel</button>
+              </div>
             </form>
           ) : (
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {ACTIONS[fact.status].map((a) => (
-                <button key={a.to} className={`btn ${a.to === "active" ? "btn-primary" : a.danger ? "btn-danger" : "btn-secondary"}`} onClick={() => { setPending(a.to); setError(null); }}>{a.label}</button>
+                <button
+                  key={a.to}
+                  className={`btn text-xs ${a.to === "active" ? "btn-primary" : a.danger ? "btn-danger" : "btn-secondary"}`}
+                  onClick={() => { setPending(a.to); setError(null); }}
+                >
+                  {a.label}
+                </button>
               ))}
-              {!ACTIONS[fact.status].length && <p className="text-ink-soft">Retired facts cannot change status. Create a new fact instead.</p>}
+              {!ACTIONS[fact.status].length && <p className="text-xs text-ink-muted italic">Retired facts cannot change status. Create a new fact instead.</p>}
             </div>
           )}
         </section>
 
         <dl className={dl}>
-          <dt className="font-bold">Valid from</dt><dd>{formatDate(fact.valid_from)}</dd>
-          <dt className="font-bold">Expires on</dt><dd>{fact.expires_at ? formatDate(fact.expires_at) : "No expiry date recorded"}</dd>
-          <dt className="font-bold">Review</dt><dd>{reviewText(fact.review_state, fact.review_date) || "Not applicable"}</dd>
-          <dt className="font-bold">Owner</dt><dd>{fact.owner ?? "Not set"}</dd>
-          <dt className="font-bold">Approved</dt><dd>{fact.approved_at ? `${formatDate(fact.approved_at)}${fact.approved_by ? ` by ${fact.approved_by}` : ""}` : "Not approved"}</dd>
-          <dt className="font-bold">Version</dt><dd>{fact.version}</dd>
+          <dt className="font-semibold text-ink-muted uppercase tracking-wider text-[11px]">Valid from</dt><dd className="text-ink font-medium">{formatDate(fact.valid_from)}</dd>
+          <dt className="font-semibold text-ink-muted uppercase tracking-wider text-[11px]">Expires on</dt><dd className="text-ink font-medium">{fact.expires_at ? formatDate(fact.expires_at) : "No expiry date recorded"}</dd>
+          <dt className="font-semibold text-ink-muted uppercase tracking-wider text-[11px]">Review</dt><dd className="text-ink font-medium">{reviewText(fact.review_state, fact.review_date) || "Not applicable"}</dd>
+          <dt className="font-semibold text-ink-muted uppercase tracking-wider text-[11px]">Owner</dt><dd className="text-ink font-medium">{fact.owner ?? "Not set"}</dd>
+          <dt className="font-semibold text-ink-muted uppercase tracking-wider text-[11px]">Approved</dt><dd className="text-ink font-medium">{fact.approved_at ? `${formatDate(fact.approved_at)}${fact.approved_by ? ` by ${fact.approved_by}` : ""}` : "Not approved"}</dd>
+          <dt className="font-semibold text-ink-muted uppercase tracking-wider text-[11px]">Version</dt><dd className="text-ink font-mono font-bold">v{fact.version}</dd>
         </dl>
 
-        <section aria-label="Source">
-          <h3 className="mb-3 text-xl font-semibold">Source</h3>
+        <section aria-label="Source" className="space-y-2">
+          <h3 className="text-sm font-serif font-bold text-ink">Source Ground Truth</h3>
           {fact.source_document_id ? (
             <SourceEvidence documentId={fact.source_document_id} page={fact.source_page} excerpt={fact.source_excerpt} />
           ) : (
-            <div className="border-l-4 border-rule-strong bg-paper px-4 py-3"><p className="text-sm font-bold text-ink-soft">Manual source, no document</p><p className="mt-1">{fact.source_note}</p></div>
+            <div className="rounded-xl border border-rule bg-paper p-4">
+              <p className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Manual source, no document attached</p>
+              <p className="mt-1 text-xs text-ink">{fact.source_note}</p>
+            </div>
           )}
         </section>
 
-        <section aria-label="History">
-          <h3 className="mb-3 text-xl font-semibold">History</h3>
+        <section aria-label="History" className="space-y-3">
+          <h3 className="text-sm font-serif font-bold text-ink">Version Ledger</h3>
           {history.loading && <Loading label="Loading history" />}
           {history.error && <Notice kind="error">{errorMessage(history.error)}</Notice>}
-          <ol className="rule-list">
+          <ol className="divide-y divide-rule border border-rule rounded-xl bg-sheet overflow-hidden">
             {history.data?.slice().reverse().map((r) => (
-              <li key={r.id} className="py-3 text-[15px]">
-                <p className="font-bold">Version {r.revision_number}: {r.action === "created" ? "Created" : r.action === "status_changed" ? "Status changed" : "Edited"}{r.changed_by ? ` by ${r.changed_by}` : ""}</p>
-                <p className="text-sm text-ink-soft">{formatDate(r.created_at)}</p>
-                {Object.entries(r.changes).map(([k, c]) => <p key={k} className="text-sm">{k.replace(/_/g, " ")}: {String(c.old ?? "empty")} to {String(c.new ?? "empty")}</p>)}
-                {r.change_reason && <p className="text-sm italic">{r.change_reason}</p>}
+              <li key={r.id} className="p-3.5 text-xs space-y-1 hover:bg-paper/40 transition">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-ink font-serif">Version {r.revision_number}</span>
+                  <span className="text-[11px] text-ink-muted">{formatDate(r.created_at)}</span>
+                </div>
+                <p className="text-ink-muted">
+                  {r.action === "created" ? "Created" : r.action === "status_changed" ? "Status changed" : "Edited"}
+                  {r.changed_by ? ` by ${r.changed_by}` : ""}
+                </p>
+                {Object.entries(r.changes).map(([k, c]) => (
+                  <div key={k} className="p-2 bg-paper rounded border border-rule/50 font-mono text-[11px] text-ink">
+                    <strong>{k.replace(/_/g, " ")}:</strong> {String(c.old ?? "empty")} &rarr; {String(c.new ?? "empty")}
+                  </div>
+                ))}
+                {r.change_reason && <p className="text-xs text-ink-muted italic pt-0.5">&ldquo;{r.change_reason}&rdquo;</p>}
               </li>
             ))}
           </ol>

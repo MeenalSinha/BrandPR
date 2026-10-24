@@ -6,29 +6,32 @@ import { useBrand, useToast } from "@/components/providers";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import { useResource } from "@/lib/hooks";
 import type { GuidelineRule, GuidelineLintIssue, GuidelineRuleVersion } from "@/types/api";
+import { IconGuidelines, IconPlus, IconAlert, IconCheck } from "@/components/Icons";
 
 function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    active: "bg-emerald-100 text-emerald-800 border-emerald-300",
-    proposed: "bg-amber-100 text-amber-800 border-amber-300",
-    retired: "bg-gray-100 text-gray-700 border-gray-300",
+  const styles: Record<string, { bg: string; text: string; dot: string; border: string }> = {
+    active: { bg: "bg-signal-wash", text: "text-signal-dark", dot: "bg-signal", border: "border-signal/30" },
+    proposed: { bg: "bg-amber-50", text: "text-amber-800", dot: "bg-amber-500", border: "border-amber-200" },
+    retired: { bg: "bg-surface-100", text: "text-ink-muted", dot: "bg-slate-400", border: "border-rule" },
   };
+  const conf = styles[status] || styles.proposed;
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded border ${styles[status] || "bg-gray-100"}`}>
-      {status.toUpperCase()}
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider border ${conf.bg} ${conf.text} ${conf.border}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${conf.dot}`} />
+      {status}
     </span>
   );
 }
 
 function SeverityBadge({ severity }: { severity: string }) {
   const styles: Record<string, string> = {
-    high: "bg-rose-100 text-rose-800 border-rose-300",
-    medium: "bg-amber-100 text-amber-800 border-amber-300",
-    low: "bg-blue-100 text-blue-800 border-blue-300",
+    high: "bg-terracotta-soft text-terracotta border-terracotta/30",
+    medium: "bg-amber-50 text-amber-800 border-amber-200",
+    low: "bg-blue-50 text-blue-800 border-blue-200",
   };
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 text-xs rounded border ${styles[severity] || "bg-gray-100"}`}>
-      {severity}
+    <span className={`inline-flex items-center px-2 py-0.5 text-[11px] font-semibold rounded border ${styles[severity] || "bg-surface-100 text-ink-muted border-rule"}`}>
+      {severity} severity
     </span>
   );
 }
@@ -200,76 +203,84 @@ export function GuidelinesView() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-rule pb-4">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-rule pb-5">
         <div>
-          <h1 className="font-serif text-3xl font-semibold">Guideline Lint & Rule Management</h1>
-          <p className="text-sm text-ink-soft">
-            Manage source-linked brand policies, detect potential ambiguities or conflicts, and review version history.
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-signal mb-1">
+            <IconGuidelines className="w-3.5 h-3.5" />
+            <span>Policy Governance & Static Analysis</span>
+          </div>
+          <h1 className="font-serif text-3xl font-bold tracking-tight text-ink">Guideline Lint & Rule Management</h1>
+          <p className="text-sm text-ink-muted mt-1 max-w-2xl leading-relaxed">
+            Manage source-linked brand policies, detect potential ambiguities or cross-rule conflicts, and review versioned governance history.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className="btn btn-secondary text-sm"
+            className="btn btn-secondary text-xs"
             onClick={handleRunLint}
             disabled={linting}
           >
-            {linting ? "Linting rules..." : "Run Guideline Lint"}
+            {linting ? "Linting rules..." : "⚡ Run Guideline Lint"}
           </button>
           <button
             type="button"
-            className="btn btn-secondary text-sm"
+            className="btn btn-secondary text-xs"
             onClick={() => setShowExtractModal(true)}
           >
             Extract from Document
           </button>
           <button
             type="button"
-            className="btn btn-primary text-sm"
+            className="btn btn-primary text-xs shadow-subtle flex items-center gap-1.5"
             onClick={() => setShowCreateModal(true)}
           >
-            + New Guideline Rule
+            <IconPlus className="w-3.5 h-3.5" />
+            <span>+ New Guideline Rule</span>
           </button>
         </div>
       </header>
 
       {/* Lint Issues Box */}
       {lintIssues && (
-        <section className="border border-rule-strong bg-paper p-4 rounded space-y-3">
+        <section className="rounded-xl border border-amber-200 bg-amber-50/60 p-5 space-y-3 shadow-subtle animate-in fade-in duration-150">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-base flex items-center gap-2">
-              <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-500" />
+            <h3 className="font-serif font-bold text-base text-amber-950 flex items-center gap-2">
+              <IconAlert className="w-4 h-4 text-amber-600" />
               Guideline Lint Results ({lintIssues.length} candidate issues identified)
             </h3>
             <button
               type="button"
-              className="text-xs text-ink-soft hover:underline"
+              className="text-xs text-ink-muted hover:text-ink font-semibold"
               onClick={() => setLintIssues(null)}
             >
               Dismiss
             </button>
           </div>
-          <p className="text-xs text-ink-soft">
+          <p className="text-xs text-ink-muted">
             Note: Issues flagged below require human assessment and do not automatically alter active guidelines.
           </p>
           {lintIssues.length === 0 ? (
-            <p className="text-sm text-emerald-700">No rule ambiguities or cross-rule conflicts detected.</p>
+            <div className="p-3 bg-sheet rounded-lg border border-signal/20 text-xs text-signal-dark font-medium flex items-center gap-2">
+              <IconCheck className="w-4 h-4 text-signal" />
+              <span>No rule ambiguities or cross-rule conflicts detected in this brand&apos;s active guidelines.</span>
+            </div>
           ) : (
             <ul className="space-y-2">
               {lintIssues.map((issue) => (
-                <li key={issue.id} className="p-3 border border-rule bg-sheet rounded text-sm space-y-1">
+                <li key={issue.id} className="p-3.5 border border-rule bg-sheet rounded-xl text-xs space-y-1.5 shadow-xs">
                   <div className="flex items-center gap-2 font-medium">
-                    <span className="font-mono text-xs px-1.5 py-0.5 bg-gray-200 rounded">{issue.issue_category}</span>
-                    <span className="text-rose-700 font-semibold">{issue.explanation}</span>
+                    <span className="font-mono text-[10px] uppercase font-bold px-1.5 py-0.5 bg-paper rounded border border-rule text-ink">{issue.issue_category}</span>
+                    <span className="text-terracotta font-semibold">{issue.explanation}</span>
                   </div>
                   {issue.conflicting_rule_id && (
-                    <p className="text-xs text-ink-soft">
-                      Potential conflict with Rule ID: <code className="text-xs bg-gray-100 px-1 py-0.5">{issue.conflicting_rule_id}</code>
+                    <p className="text-xs text-ink-muted">
+                      Potential conflict with Rule ID: <code className="text-[11px] bg-paper px-1.5 py-0.5 rounded font-mono border border-rule text-ink">{issue.conflicting_rule_id}</code>
                     </p>
                   )}
                   {issue.suggested_action && (
-                    <p className="text-xs text-ink">
-                      <span className="font-semibold">Suggested Action:</span> {issue.suggested_action}
+                    <p className="text-xs text-ink font-medium">
+                      <span className="font-semibold text-signal">Suggested Action:</span> {issue.suggested_action}
                     </p>
                   )}
                 </li>
@@ -280,16 +291,16 @@ export function GuidelinesView() {
       )}
 
       {/* Status Filters */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold text-ink-soft uppercase tracking-wider">Status:</span>
+      <div className="flex items-center gap-2 border-b border-rule/60 pb-2">
+        <span className="text-xs font-semibold text-ink-muted uppercase tracking-wider mr-1">Status:</span>
         {(["all", "active", "proposed", "retired"] as const).map((st) => (
           <button
             key={st}
             type="button"
-            className={`px-3 py-1 text-xs rounded border ${
+            className={`px-3 py-1 text-xs rounded-full border transition-all ${
               statusFilter === st
-                ? "bg-signal text-white border-signal font-semibold"
-                : "bg-sheet border-rule text-ink hover:bg-paper"
+                ? "bg-signal text-white border-signal font-semibold shadow-xs"
+                : "bg-sheet border-rule text-ink-muted hover:border-rule-strong hover:text-ink"
             }`}
             onClick={() => setStatusFilter(st)}
           >
@@ -303,7 +314,7 @@ export function GuidelinesView() {
         <EmptyState
           title="No guideline rules found"
           action={
-            <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+            <button className="btn btn-primary text-xs" onClick={() => setShowCreateModal(true)}>
               Create Guideline Rule
             </button>
           }
@@ -315,28 +326,28 @@ export function GuidelinesView() {
           {rules.map((rule) => (
             <div
               key={rule.id}
-              className="border border-rule bg-sheet p-4 rounded space-y-3 flex flex-col justify-between hover:border-rule-strong transition-colors"
+              className="rounded-xl border border-rule bg-sheet p-5 space-y-3 flex flex-col justify-between hover:border-signal/40 hover:shadow-subtle transition-all"
             >
               <div className="space-y-2">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-serif text-lg font-semibold">{rule.title}</h3>
+                  <h3 className="font-serif text-lg font-bold text-ink">{rule.title}</h3>
                   <StatusBadge status={rule.status} />
                 </div>
-                <p className="text-sm text-ink">{rule.rule_text}</p>
-                <div className="flex flex-wrap items-center gap-2 text-xs text-ink-soft">
-                  <span className="capitalize px-1.5 py-0.5 bg-paper rounded border border-rule">{rule.category}</span>
+                <p className="text-xs text-ink leading-relaxed font-medium">{rule.rule_text}</p>
+                <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+                  <span className="capitalize px-2 py-0.5 bg-paper rounded border border-rule text-ink-muted font-medium">{rule.category}</span>
                   <SeverityBadge severity={rule.severity} />
-                  <span>v{rule.current_version}</span>
-                  {rule.scope && <span>Scope: {rule.scope}</span>}
+                  <span className="font-mono text-ink-muted text-[11px]">v{rule.current_version}</span>
+                  {rule.scope && <span className="text-ink-muted text-[11px]">Scope: {rule.scope}</span>}
                 </div>
                 {rule.source_excerpt && (
-                  <blockquote className="border-l-2 border-rule-strong pl-2 text-xs italic text-ink-soft line-clamp-2">
+                  <blockquote className="rounded-lg border-l-2 border-signal/50 bg-paper/60 p-2 text-xs italic text-ink-muted line-clamp-2">
                     &ldquo;{rule.source_excerpt}&rdquo;
                   </blockquote>
                 )}
               </div>
-              <div className="pt-2 border-t border-rule flex items-center justify-between">
-                <span className="text-xs text-ink-soft">
+              <div className="pt-3 border-t border-rule/50 flex items-center justify-between text-xs">
+                <span className="text-ink-muted text-[11px]">
                   {rule.owner ? `Owner: ${rule.owner}` : "No assigned owner"}
                 </span>
                 <button
@@ -373,7 +384,7 @@ export function GuidelinesView() {
                 {activeRuleModal.status === "active" && (
                   <button
                     type="button"
-                    className="btn btn-secondary text-xs text-rose-700"
+                    className="btn btn-secondary text-xs text-terracotta"
                     disabled={busyAction}
                     onClick={() => handleUpdateStatus("retired")}
                   >
@@ -391,28 +402,28 @@ export function GuidelinesView() {
             </div>
           }
         >
-          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-            <div className="space-y-1">
+          <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
+            <div className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <StatusBadge status={activeRuleModal.status} />
-                <span className="text-xs font-semibold">Version {activeRuleModal.current_version}</span>
+                <span className="text-xs font-mono font-semibold text-ink-muted">Version {activeRuleModal.current_version}</span>
               </div>
-              <p className="font-semibold text-sm">{activeRuleModal.rule_text}</p>
+              <p className="font-semibold text-sm text-ink leading-relaxed">{activeRuleModal.rule_text}</p>
             </div>
 
             {activeRuleModal.source_excerpt && (
-              <div className="p-3 bg-paper rounded border border-rule text-xs space-y-1">
-                <span className="font-bold text-ink-soft">Source Excerpt</span>
-                <p className="italic text-ink">&ldquo;{activeRuleModal.source_excerpt}&rdquo;</p>
-                {activeRuleModal.source_page && <p className="text-ink-soft">Page: {activeRuleModal.source_page}</p>}
+              <div className="p-3.5 bg-paper rounded-xl border border-rule text-xs space-y-1">
+                <span className="font-bold text-ink-muted uppercase tracking-wider text-[10px]">Source Excerpt</span>
+                <p className="italic text-ink leading-relaxed">&ldquo;{activeRuleModal.source_excerpt}&rdquo;</p>
+                {activeRuleModal.source_page && <p className="text-ink-muted text-[11px] font-mono">Page: {activeRuleModal.source_page}</p>}
               </div>
             )}
 
             {/* Propose a New Version Form */}
-            <div className="border border-rule rounded p-3 space-y-3 bg-sheet">
-              <h4 className="font-bold text-xs uppercase tracking-wide text-ink-soft">Propose Revised Rule Text</h4>
+            <div className="border border-rule rounded-xl p-4 space-y-3 bg-sheet">
+              <h4 className="font-serif font-bold text-xs uppercase tracking-wider text-ink">Propose Revised Rule Text</h4>
               <textarea
-                className="input text-sm w-full"
+                className="input text-xs w-full leading-relaxed"
                 rows={3}
                 value={editingText}
                 onChange={(e) => setEditingText(e.target.value)}
@@ -436,21 +447,21 @@ export function GuidelinesView() {
 
             {/* Version History Table */}
             <div className="space-y-2">
-              <h4 className="font-bold text-xs uppercase tracking-wide text-ink-soft">Version History</h4>
+              <h4 className="font-serif font-bold text-xs uppercase tracking-wider text-ink">Version Ledger</h4>
               {!ruleVersions ? (
-                <p className="text-xs text-ink-soft">Loading versions...</p>
+                <p className="text-xs text-ink-muted">Loading versions...</p>
               ) : ruleVersions.length === 0 ? (
-                <p className="text-xs text-ink-soft">No previous versions.</p>
+                <p className="text-xs text-ink-muted">No previous versions.</p>
               ) : (
                 <div className="space-y-2">
                   {ruleVersions.map((v) => (
-                    <div key={v.id} className="p-2 border border-rule rounded bg-paper text-xs space-y-1">
+                    <div key={v.id} className="p-3 border border-rule rounded-xl bg-paper text-xs space-y-1">
                       <div className="flex justify-between font-medium">
-                        <span>Version {v.version_number}</span>
-                        <span className="text-ink-soft">{new Date(v.created_at).toLocaleString()}</span>
+                        <span className="font-bold text-ink">Version {v.version_number}</span>
+                        <span className="text-ink-muted text-[11px]">{new Date(v.created_at).toLocaleString()}</span>
                       </div>
                       <p className="text-ink">{v.rule_text}</p>
-                      {v.change_reason && <p className="text-ink-soft italic">Reason: {v.change_reason}</p>}
+                      {v.change_reason && <p className="text-ink-muted italic text-[11px]">Reason: {v.change_reason}</p>}
                     </div>
                   ))}
                 </div>
@@ -485,7 +496,7 @@ export function GuidelinesView() {
             <Field label="Rule Title" htmlFor="rule-title">
               <input
                 id="rule-title"
-                className="input w-full text-sm"
+                className="input w-full text-xs"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 placeholder="e.g. Comparative Claims Limitation"
@@ -494,7 +505,7 @@ export function GuidelinesView() {
             <Field label="Rule Statement / Text" htmlFor="rule-text">
               <textarea
                 id="rule-text"
-                className="input w-full text-sm"
+                className="input w-full text-xs"
                 rows={3}
                 value={newText}
                 onChange={(e) => setNewText(e.target.value)}
@@ -583,13 +594,13 @@ export function GuidelinesView() {
           }
         >
           <div className="space-y-4">
-            <p className="text-xs text-ink-soft">
+            <p className="text-xs text-ink-muted leading-relaxed">
               Select an uploaded brand document. Extracted rules will remain in <strong>proposed</strong> status until explicitly approved by an authorized reviewer.
             </p>
             <Field label="Source Document" htmlFor="select-doc">
               <select
                 id="select-doc"
-                className="input w-full text-sm"
+                className="input w-full text-xs"
                 value={selectedDocId}
                 onChange={(e) => setSelectedDocId(e.target.value)}
               >

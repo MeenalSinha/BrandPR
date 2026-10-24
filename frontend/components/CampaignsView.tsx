@@ -6,15 +6,16 @@ import { useBrand, useToast } from "@/components/providers";
 import { api, errorMessage } from "@/lib/api";
 import type { Campaign, CampaignStatus } from "@/types/api";
 import { EmptyState } from "@/components/ui";
+import { IconCampaigns, IconPlus, IconAlert, IconCheck } from "@/components/Icons";
 
-const STATUS_COLORS: Record<CampaignStatus, string> = {
-  draft: "bg-surface-200 text-ink-base border-border-base",
-  in_review: "bg-amber-100 text-amber-900 border-amber-300",
-  blocked: "bg-red-100 text-red-900 border-red-300",
-  needs_review: "bg-orange-100 text-orange-900 border-orange-300",
-  ready_for_release: "bg-emerald-100 text-emerald-900 border-emerald-300",
-  released: "bg-indigo-100 text-indigo-900 border-indigo-300",
-  archived: "bg-surface-200 text-ink-muted border-border-base",
+const STATUS_CONFIG: Record<CampaignStatus, { label: string; bg: string; text: string; dot: string; border: string }> = {
+  draft: { label: "Draft", bg: "bg-surface-100", text: "text-ink-muted", dot: "bg-ink-muted", border: "border-rule" },
+  in_review: { label: "In Review", bg: "bg-amber-50", text: "text-amber-800", dot: "bg-amber-500", border: "border-amber-200" },
+  blocked: { label: "Blocked", bg: "bg-terracotta-soft", text: "text-terracotta", dot: "bg-terracotta", border: "border-terracotta/30" },
+  needs_review: { label: "Needs Review", bg: "bg-amber-50", text: "text-amber-800", dot: "bg-amber-500", border: "border-amber-200" },
+  ready_for_release: { label: "Ready for Release", bg: "bg-signal-wash", text: "text-signal-dark", dot: "bg-signal", border: "border-signal/30" },
+  released: { label: "Released", bg: "bg-blue-50", text: "text-blue-800", dot: "bg-blue-600", border: "border-blue-200" },
+  archived: { label: "Archived", bg: "bg-surface-100", text: "text-ink-muted", dot: "bg-slate-400", border: "border-rule" },
 };
 
 export function CampaignsView() {
@@ -81,36 +82,41 @@ export function CampaignsView() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border-base pb-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-rule pb-5">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink-base">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-signal mb-1">
+            <IconCampaigns className="w-3.5 h-3.5" />
+            <span>Campaign Intelligence & Release Gate</span>
+          </div>
+          <h1 className="text-2xl font-serif font-bold tracking-tight text-ink">
             Campaigns & Portfolios
           </h1>
-          <p className="text-sm text-ink-muted mt-1">
-            Group related marketing content, audit portfolio consistency, and gate releases with evidence-backed decisions.
+          <p className="text-sm text-ink-muted mt-1 max-w-2xl">
+            Audit multi-channel content for consistency, detect cross-asset claim conflicts, and enforce release readiness with evidence-backed verification.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-brand-primary text-white rounded-md text-sm font-medium hover:bg-brand-primary/90 transition shadow-sm"
+            className="btn btn-primary shadow-subtle flex items-center gap-1.5"
           >
-            + New Campaign
+            <IconPlus className="w-3.5 h-3.5" />
+            <span>+ New Campaign</span>
           </button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-border-base/50">
-        <span className="text-xs uppercase tracking-wider font-semibold text-ink-muted mr-2">Status:</span>
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-rule/60">
+        <span className="text-xs uppercase tracking-wider font-semibold text-ink-muted mr-1">Status:</span>
         {["all", "draft", "in_review", "blocked", "needs_review", "ready_for_release", "released"].map((st) => (
           <button
             key={st}
             onClick={() => setStatusFilter(st)}
-            className={`px-3 py-1 rounded-full text-xs font-medium border transition ${
+            className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
               statusFilter === st
-                ? "bg-brand-primary/10 text-brand-primary border-brand-primary/30"
-                : "bg-surface-100 text-ink-muted border-border-base hover:bg-surface-200"
+                ? "bg-signal text-white border-signal shadow-xs"
+                : "bg-sheet text-ink-muted border-rule hover:border-rule-strong hover:text-ink"
             }`}
           >
             {st.replace(/_/g, " ").toUpperCase()}
@@ -120,7 +126,7 @@ export function CampaignsView() {
 
       {/* Campaign List */}
       {loading ? (
-        <div className="p-12 text-center text-sm text-ink-muted">Loading campaigns...</div>
+        <div className="p-12 text-center text-sm text-ink-muted rounded-xl border border-rule bg-sheet">Loading campaigns...</div>
       ) : campaigns.length === 0 ? (
         <EmptyState title="No campaigns found">
           {statusFilter === "all"
@@ -129,66 +135,70 @@ export function CampaignsView() {
         </EmptyState>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {campaigns.map((camp) => (
-            <Link
-              key={camp.id}
-              href={`/campaigns/${camp.id}`}
-              className="group block p-5 rounded-lg border border-border-base bg-surface-base hover:border-brand-primary/40 hover:shadow-md transition space-y-3"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="font-semibold text-ink-base group-hover:text-brand-primary transition">
-                  {camp.title}
-                </h3>
-                <span
-                  className={`px-2 py-0.5 rounded text-xs font-semibold border ${
-                    STATUS_COLORS[camp.status] || "bg-surface-200 text-ink-base border-border-base"
-                  }`}
-                >
-                  {camp.status.replace(/_/g, " ").toUpperCase()}
-                </span>
-              </div>
-
-              {camp.description && (
-                <p className="text-xs text-ink-muted line-clamp-2">{camp.description}</p>
-              )}
-
-              <div className="pt-3 border-t border-border-base/50 grid grid-cols-3 gap-2 text-center text-xs text-ink-muted">
-                <div>
-                  <span className="block font-semibold text-ink-base">{camp.asset_count}</span>
-                  <span>Assets</span>
-                </div>
-                <div>
-                  <span className={`block font-semibold ${camp.blocker_count > 0 ? "text-red-600" : "text-ink-base"}`}>
-                    {camp.blocker_count}
+          {campaigns.map((camp) => {
+            const conf = STATUS_CONFIG[camp.status] || STATUS_CONFIG.draft;
+            return (
+              <Link
+                key={camp.id}
+                href={`/campaigns/${camp.id}`}
+                className="group block p-5 rounded-xl border border-rule bg-sheet hover:border-signal/50 hover:shadow-subtle transition-all space-y-4"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-serif font-bold text-base text-ink group-hover:text-signal transition line-clamp-1">
+                    {camp.title}
+                  </h3>
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${conf.bg} ${conf.text} ${conf.border}`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${conf.dot}`} />
+                    {conf.label}
                   </span>
-                  <span>Blockers</span>
                 </div>
-                <div>
-                  <span className={`block font-semibold ${camp.warning_count > 0 ? "text-amber-600" : "text-ink-base"}`}>
-                    {camp.warning_count}
-                  </span>
-                  <span>Warnings</span>
-                </div>
-              </div>
 
-              {camp.latest_audit_stale && (
-                <div className="text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
-                  ⚠️ Audit is stale. Needs re-evaluation.
+                {camp.description ? (
+                  <p className="text-xs text-ink-muted line-clamp-2 leading-relaxed">{camp.description}</p>
+                ) : (
+                  <p className="text-xs text-ink-faint italic">No description provided</p>
+                )}
+
+                <div className="pt-3 border-t border-rule/60 grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="bg-paper p-2 rounded-lg border border-rule/50">
+                    <span className="block font-serif font-bold text-base text-ink">{camp.asset_count}</span>
+                    <span className="text-[11px] text-ink-muted font-medium">Assets</span>
+                  </div>
+                  <div className={`p-2 rounded-lg border ${camp.blocker_count > 0 ? "bg-terracotta-soft border-terracotta/20 text-terracotta" : "bg-paper border-rule/50 text-ink"}`}>
+                    <span className="block font-serif font-bold text-base">{camp.blocker_count}</span>
+                    <span className="text-[11px] text-ink-muted font-medium">Blockers</span>
+                  </div>
+                  <div className={`p-2 rounded-lg border ${camp.warning_count > 0 ? "bg-amber-50/70 border-amber-200/50 text-amber-800" : "bg-paper border-rule/50 text-ink"}`}>
+                    <span className="block font-serif font-bold text-base">{camp.warning_count}</span>
+                    <span className="text-[11px] text-ink-muted font-medium">Warnings</span>
+                  </div>
                 </div>
-              )}
-            </Link>
-          ))}
+
+                {camp.latest_audit_stale && (
+                  <div className="flex items-center gap-2 text-[11px] font-medium text-amber-900 bg-amber-50 px-2.5 py-1.5 rounded-lg border border-amber-200">
+                    <IconAlert className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                    <span>Audit is stale. Asset revisions updated since last check.</span>
+                  </div>
+                )}
+              </Link>
+            );
+          })}
         </div>
       )}
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-surface-base border border-border-base rounded-lg shadow-xl p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-ink-base">Create New Campaign</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md bg-sheet border border-rule rounded-xl shadow-overlay p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div>
+              <h2 className="text-lg font-serif font-bold text-ink">Create New Campaign</h2>
+              <p className="text-xs text-ink-muted mt-0.5">Define a portfolio of marketing assets to govern jointly before publication.</p>
+            </div>
             <form onSubmit={handleCreateCampaign} className="space-y-4">
               <div>
-                <label htmlFor="campaign-title" className="block text-xs font-medium text-ink-muted mb-1">
+                <label htmlFor="campaign-title" className="block text-xs font-semibold text-ink mb-1">
                   Campaign Title *
                 </label>
                 <input
@@ -198,12 +208,12 @@ export function CampaignsView() {
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="e.g. Q4 Global Product Launch"
-                  className="w-full px-3 py-2 text-sm border border-border-base rounded-md focus:outline-none focus:border-brand-primary"
+                  className="input text-sm"
                 />
               </div>
 
               <div>
-                <label htmlFor="campaign-desc" className="block text-xs font-medium text-ink-muted mb-1">
+                <label htmlFor="campaign-desc" className="block text-xs font-semibold text-ink mb-1">
                   Description
                 </label>
                 <textarea
@@ -212,13 +222,13 @@ export function CampaignsView() {
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
                   placeholder="Goals, channels, and target markets..."
-                  className="w-full px-3 py-2 text-sm border border-border-base rounded-md focus:outline-none focus:border-brand-primary"
+                  className="input text-sm"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-ink-muted mb-1">
+                  <label className="block text-xs font-semibold text-ink mb-1">
                     Owner
                   </label>
                   <input
@@ -226,11 +236,11 @@ export function CampaignsView() {
                     value={newOwner}
                     onChange={(e) => setNewOwner(e.target.value)}
                     placeholder="e.g. Marketing Lead"
-                    className="w-full px-3 py-2 text-sm border border-border-base rounded-md focus:outline-none focus:border-brand-primary"
+                    className="input text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-ink-muted mb-1">
+                  <label className="block text-xs font-semibold text-ink mb-1">
                     External Ref (Jira/Asana)
                   </label>
                   <input
@@ -238,23 +248,23 @@ export function CampaignsView() {
                     value={newRef}
                     onChange={(e) => setNewRef(e.target.value)}
                     placeholder="e.g. CAMP-402"
-                    className="w-full px-3 py-2 text-sm border border-border-base rounded-md focus:outline-none focus:border-brand-primary"
+                    className="input text-sm"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex justify-end gap-3 pt-3 border-t border-rule">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 border border-border-base rounded-md text-xs font-medium hover:bg-surface-200 transition"
+                  className="btn btn-secondary text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting || !newTitle.trim()}
-                  className="px-4 py-2 bg-brand-primary text-white rounded-md text-xs font-medium hover:bg-brand-primary/90 transition disabled:opacity-50"
+                  className="btn btn-primary text-xs disabled:opacity-50"
                 >
                   {submitting ? "Creating..." : "Create Campaign"}
                 </button>
