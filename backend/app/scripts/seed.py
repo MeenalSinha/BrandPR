@@ -21,6 +21,8 @@ from app.db.session import get_db, get_engine
 from app.models import (
     ApprovedFact, Brand, ContentAsset, ContentSubmission, DocumentSection, FactChangeImpact, FactChangeImpactFinding, FactChangeImpactResolution,
     FactRevision, FindingEvidence, ReviewFinding, ReviewRun, RevisionCorrection, RiskOverride, SourceDocument, WorkflowEvent,
+    Campaign, CampaignAsset, CampaignAudit, CampaignAuditFinding, CampaignReleaseDecision,
+    GuidelineRule, GuidelineRuleVersion, GuidelineLintResult, PolicySimulation, PolicySimulationResult,
 )
 
 # Phase 4 history tables are append-only (a trigger rejects DELETE). This development-only reset lifts that inside its own
@@ -46,6 +48,24 @@ def reset(db: Session) -> None:
     keys = [d.storage_path for d in db.scalars(select(SourceDocument).where(SourceDocument.brand_id == brand.id))]
     for table, trigger in APPEND_ONLY_TRIGGERS.items():
         db.execute(text(f"ALTER TABLE {table} DISABLE TRIGGER {trigger}"))
+    # Phase 6 campaigns and audits reference content submissions and assets
+    campaign_ids = select(Campaign.id).where(Campaign.brand_id == brand.id)
+    audit_ids = select(CampaignAudit.id).where(CampaignAudit.campaign_id.in_(campaign_ids))
+    db.execute(delete(CampaignReleaseDecision).where(CampaignReleaseDecision.campaign_id.in_(campaign_ids)))
+    db.execute(delete(CampaignAuditFinding).where(CampaignAuditFinding.audit_id.in_(audit_ids)))
+    db.execute(delete(CampaignAudit).where(CampaignAudit.campaign_id.in_(campaign_ids)))
+    db.execute(delete(CampaignAsset).where(CampaignAsset.campaign_id.in_(campaign_ids)))
+    db.execute(delete(Campaign).where(Campaign.brand_id == brand.id))
+
+    # Phase 5 policy simulations and guideline rules
+    sim_ids = select(PolicySimulation.id).where(PolicySimulation.brand_id == brand.id)
+    db.execute(delete(PolicySimulationResult).where(PolicySimulationResult.simulation_id.in_(sim_ids)))
+    db.execute(delete(PolicySimulation).where(PolicySimulation.brand_id == brand.id))
+    db.execute(delete(GuidelineLintResult).where(GuidelineLintResult.brand_id == brand.id))
+    rule_ids = select(GuidelineRule.id).where(GuidelineRule.brand_id == brand.id)
+    db.execute(delete(GuidelineRuleVersion).where(GuidelineRuleVersion.rule_id.in_(rule_ids)))
+    db.execute(delete(GuidelineRule).where(GuidelineRule.brand_id == brand.id))
+
     # Impacts, decisions and review data reference facts and documents, so they go first.
     for model in (
         FactChangeImpactResolution, RiskOverride, RevisionCorrection, FactChangeImpactFinding, FactChangeImpact, WorkflowEvent,
@@ -158,6 +178,82 @@ def seed(db: Session) -> None:
         status="expired", actor=ACTOR, reason="Superseded by the Nova 3.2 specification."))
     # An edited, previously approved fact: shows revision history and re-approval semantics.
     facts.update_fact(db, battery.id, FactUpdate(owner="Product marketing", actor=ACTOR, change_reason="Ownership moved."))
+
+    # -------------------------------------------------------------------------
+    # Seed Demonstration Content for ProofGraph, Claim Ledger & Approvals
+    # -------------------------------------------------------------------------
+    from app.api.deps import Actor
+    from app.schemas.review import ContentCreate
+    from app.schemas.workflow import DecisionCreate, RevisionCreate
+    from app.services import content as content_svc, revisions, workflow
+    from app.services.review import pipeline
+
+    creator_actor = Actor(name="Casey Creator", role="creator")
+    reviewer_actor = Actor(name="Alex Compliance", role="reviewer")
+
+    # 1. Asset A: "Nova Product Brochure" - relies on Battery Life v1 ("Up to 18 hours")
+    brochure = content_svc.create_content(db, brand.id, ContentCreate(
+        title="Nova Product Brochure",
+        content=(
+            "Experience all-day productivity with Nova.\n"
+            "Battery life is up to 18 hours under specified test conditions.\n"
+            "Ultra-portable design weighing only 1.24 kg."
+        ),
+        submitted_by="Casey Creator",
+    ))
+    pipeline.run_review(db, brochure, None, "Casey Creator")
+
+    # 2. Materially mutate Battery Life to trigger downstream propagation in Claim Ledger!
+    facts.update_fact(db, battery.id, FactUpdate(
+        value="Up to 16 hours",
+        actor=ACTOR,
+        change_reason="Updated specification following continuous thermal re-testing.",
+    ))
+    # Explicitly re-approve the updated fact so it is active at the new value
+    facts.change_status(db, battery.id, FactStatusUpdate(
+        status="active",
+        actor=ACTOR,
+        reason="Verified and approved by product engineering leadership.",
+    ))
+
+    # 3. Asset B: "Nova Launch Campaign" - demonstrates ProofGraph findings and Revision workflow
+    launch_sub1 = content_svc.create_content(db, brand.id, ContentCreate(
+        title="Nova Launch Campaign",
+        content=(
+            "Meet the all-new Nova laptop.\n"
+            "Battery life is up to 16 hours under specified test conditions.\n"
+            "Multi-core performance delivers a 25% improvement versus the previous generation.\n"
+            "Nova is the fastest and best ever laptop on the market.\n"
+            "Battery life is 24 hours under specified test conditions."
+        ),
+        submitted_by="Casey Creator",
+    ))
+    run_launch_1 = pipeline.run_review(db, launch_sub1, None, "Casey Creator")
+    workflow.submit_for_review(db, launch_sub1.id, creator_actor)
+    workflow.decide(db, launch_sub1.id, DecisionCreate(
+        action="request_changes",
+        review_run_id=run_launch_1.id,
+        rationale="Contradictory battery claim (24 hrs) and unapproved superlative phrasing ('fastest and best ever') detected. Please revise.",
+    ), reviewer_actor)
+
+    # Revision 2: Address the requested changes, creating an immutable revision 2
+    launch_rev2 = revisions.create_revision(db, launch_sub1.id, RevisionCreate(
+        title="Nova Launch Campaign",
+        content=(
+            "Meet the all-new Nova laptop.\n"
+            "Battery life is up to 16 hours under specified test conditions.\n"
+            "Multi-core performance delivers a 25% improvement versus the previous generation.\n"
+            "Engineered for modern workflows with premium multi-tasking performance."
+        ),
+        change_note="Removed contradictory 24-hour battery claim and unapproved superlative phrasing as requested.",
+    ), creator_actor)
+    run_launch_2 = pipeline.run_review(db, launch_rev2, None, "Casey Creator")
+    workflow.submit_for_review(db, launch_rev2.id, creator_actor)
+    workflow.decide(db, launch_rev2.id, DecisionCreate(
+        action="approve",
+        review_run_id=run_launch_2.id,
+        rationale="All claims verified against approved specifications. Avoided terminology and contradictions resolved.",
+    ), reviewer_actor)
 
 
 def main() -> int:

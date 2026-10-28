@@ -338,6 +338,18 @@ export function ReviewView() {
     setCurrent(null); setSelectedId(null); setTitle(""); setBody(""); setErrors({}); setError(null);
   }
 
+  function loadSampleCopy() {
+    setTitle("Nova Launch Campaign");
+    setBody(
+      "Meet the all-new Nova.\n" +
+      "Battery life is up to 18 hours under specified test conditions.\n" +
+      "Multi-core performance delivers a 25% improvement versus the previous generation.\n" +
+      "Nova is the fastest laptop on the market.\n" +
+      "Battery life is 24 hours under specified test conditions."
+    );
+    setErrors({});
+  }
+
   if (!brand) return <EmptyState title="Create a brand first">Content is reviewed against one brand&rsquo;s approved facts. Use &ldquo;New brand&rdquo; in the sidebar, then add source documents and facts.</EmptyState>;
 
   return (
@@ -353,9 +365,14 @@ export function ReviewView() {
 
       {!current && (
         <form onSubmit={submit} noValidate className="rounded-xl border border-rule bg-sheet p-6 shadow-subtle space-y-5" aria-label="Submit content">
-          <div className="border-b border-rule/60 pb-3">
-            <h2 className="text-lg font-bold text-ink">Submit Content for ProofGraph Review</h2>
-            <p className="text-xs text-ink-soft">Paste draft marketing copy or PR claims for deterministic & evidence-backed verification.</p>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rule/60 pb-3">
+            <div>
+              <h2 className="text-lg font-bold text-ink">Submit Content for ProofGraph Review</h2>
+              <p className="text-xs text-ink-soft">Paste draft marketing copy or PR claims for deterministic & evidence-backed verification.</p>
+            </div>
+            <button type="button" className="btn btn-secondary text-xs" onClick={loadSampleCopy}>
+              Load sample marketing copy
+            </button>
           </div>
           <Field label="Title" htmlFor="draft-title" error={errors.title}>
             <input id="draft-title" className="input" placeholder="e.g. Q4 Launch Announcement" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={300} aria-invalid={Boolean(errors.title)} autoComplete="off" />

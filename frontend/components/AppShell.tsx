@@ -8,7 +8,7 @@ import { BrandProvider, ToastProvider, useBrand, useToast } from "@/components/p
 import { api, ApiError, errorMessage } from "@/lib/api";
 import { useResource } from "@/lib/hooks";
 import {
-  IconKnowledge, IconFacts, IconReview, IconImpacts, IconCampaigns,
+  IconHome, IconKnowledge, IconFacts, IconReview, IconImpacts, IconCampaigns,
   IconGuidelines, IconSandbox, IconInsights, IconPlus,
 } from "@/components/Icons";
 
@@ -20,6 +20,12 @@ interface NavItem {
 }
 
 const NAV_GROUPS: { group: string; items: NavItem[] }[] = [
+  {
+    group: "Getting Started",
+    items: [
+      { href: "/", label: "Overview & Guide", hint: "Judge walkthrough", icon: IconHome },
+    ],
+  },
   {
     group: "Knowledge Base",
     items: [
@@ -101,7 +107,7 @@ function Shell({ children }: { children: ReactNode }) {
 
   // Compute active navigation title for top header
   const allNavItems = NAV_GROUPS.flatMap((g) => g.items);
-  const currentItem = allNavItems.find((item) => pathname?.startsWith(item.href)) ?? allNavItems[0];
+  const currentItem = allNavItems.find((item) => item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href)) ?? allNavItems[0];
 
   return (
     <div className="min-h-screen bg-paper md:grid md:grid-cols-[272px_1fr]">
@@ -145,7 +151,7 @@ function Shell({ children }: { children: ReactNode }) {
                   </p>
                   <ul className="space-y-0.5">
                     {group.items.map((item) => {
-                      const active = pathname?.startsWith(item.href);
+                      const active = item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
                       const Icon = item.icon;
                       return (
                         <li key={item.href}>

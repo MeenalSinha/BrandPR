@@ -14,7 +14,7 @@ import type { DecisionAction, Workflow } from "@/types/api";
  * checks every action again; hiding a button here is not a security control.
  */
 export function WorkflowPanel({ contentId, reviewKey, onChanged }: { contentId: string; reviewKey: string; onChanged: () => void }) {
-  const { actor, role } = useBrand();
+  const { actor, setActor, role, setRole } = useBrand();
   const toast = useToast();
   const wf = useResource(() => api.workflow(contentId), [contentId, reviewKey, actor, role]);
   const [rationale, setRationale] = useState("");
@@ -110,7 +110,24 @@ export function WorkflowPanel({ contentId, reviewKey, onChanged }: { contentId: 
       )}
       {w.workflow_status === "draft" && w.is_latest && !can("submit_review") && <p className="text-sm text-ink-soft">Run a review of this revision, then submit it for approval.</p>}
       {w.workflow_status === "in_review" && !decidable && (
-        <p data-testid="waiting" className="text-sm text-ink-soft">{role === "reviewer" ? "You created this revision, so another reviewer has to decide." : "Waiting for a reviewer. Switch the demo role to Reviewer in the sidebar to decide."}</p>
+        <div data-testid="waiting" className="space-y-2 rounded-xl border border-rule bg-paper p-3.5">
+          <p className="text-sm text-ink-soft">
+            {role === "reviewer"
+              ? "You created this revision, so another reviewer has to decide."
+              : "Waiting for a reviewer. Switch the demo role to Reviewer in the sidebar to decide."}
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {role !== "reviewer" ? (
+              <button type="button" className="btn btn-secondary text-xs" onClick={() => setRole("reviewer")}>
+                Switch to Reviewer role
+              </button>
+            ) : (
+              <button type="button" className="btn btn-secondary text-xs" onClick={() => setActor(actor === "Alex Compliance" ? "Jordan Reviewer" : "Alex Compliance")}>
+                Switch reviewer name
+              </button>
+            )}
+          </div>
+        </div>
       )}
       {decidable && (
         <div data-testid="decision-form" className="space-y-3 border-t border-rule pt-4">

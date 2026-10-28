@@ -136,7 +136,7 @@ function ImpactDetailPanel({ id, onChanged }: { id: string; onChanged: () => voi
 }
 
 function ResolutionSection({ impact: d, onChanged }: { impact: ImpactDetail; onChanged: () => void }) {
-  const { role, actor } = useBrand();
+  const { role, actor, setRole } = useBrand();
   const toast = useToast();
   const history = useResource(() => api.impactHistory(d.id), [d.id, d.status]);
   const [choice, setChoice] = useState("");
@@ -222,7 +222,12 @@ function ResolutionSection({ impact: d, onChanged }: { impact: ImpactDetail; onC
         </div>
       )}
       {open && role !== "reviewer" && (
-        <p data-testid="reviewer-only" className="text-xs text-ink-muted italic">Only a reviewer can resolve or dismiss an impact. Switch the demo role in the sidebar.</p>
+        <div data-testid="reviewer-only" className="space-y-2 rounded-xl border border-rule bg-paper p-3.5">
+          <p className="text-xs text-ink-muted italic">Only a reviewer can resolve or dismiss an impact. Switch the demo role in the sidebar.</p>
+          <button type="button" className="btn btn-secondary text-xs" onClick={() => setRole("reviewer")}>
+            Switch to Reviewer role
+          </button>
+        </div>
       )}
 
       {h && (
@@ -311,7 +316,7 @@ export function FactChangesView() {
             <label className="block text-xs font-semibold text-ink mb-1" htmlFor="impact-fact">Fact</label>
             <select id="impact-fact" className="input text-xs" value={factId} onChange={(e) => { setFactId(e.target.value); setOffset(0); }}>
               <option value="">All facts</option>
-              {facts.data?.items.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+              {facts.data?.items.filter((f, idx, arr) => arr.findIndex((x) => x.id === f.id) === idx).map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
             </select>
           </div>
         </div>

@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { OverviewView } from "@/components/OverviewView";
 
 export default function Home() {
-  redirect("/knowledge");
+  return <OverviewView />;
 }

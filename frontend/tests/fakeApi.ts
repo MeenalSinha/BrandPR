@@ -248,6 +248,13 @@ export class FakeApi {
   }
 
   addFact(brandId: string, over: Partial<Fact> = {}): Fact {
+    if (over.id) {
+      const existing = this.facts.find((x) => x.id === over.id);
+      if (existing) {
+        Object.assign(existing, over);
+        return existing;
+      }
+    }
     const f: Fact = {
       id: this.id(), brand_id: brandId, name: "Battery life", value: "Up to 18 hours", category: "product_spec", qualifications: "Under specified test conditions",
       unit: null, status: "active", effective_state: "current", review_state: "scheduled", warnings: [], source_document_id: null, source_page: null,
