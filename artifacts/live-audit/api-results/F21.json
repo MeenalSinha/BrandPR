@@ -1,0 +1,87 @@
+{
+  "item": {
+    "id": "F21",
+    "feature": "Campaign creation and multi-asset management",
+    "status": "PASS",
+    "liveTest": "Created campaign 6b7b8cf6-b6ba-4cd6-b7ae-5a10cbbfd225 and attached asset 726911c1-c04a-4f94-9f0a-9d8743ff8376 as 'landing_page'. Reopened to verify persistence.",
+    "evidence": "api-results/F21.json",
+    "finding": "Campaign organizes multiple content assets with designated channel roles and maintains revision pointers."
+  },
+  "details": {
+    "camp": {
+      "id": "6b7b8cf6-b6ba-4cd6-b7ae-5a10cbbfd225",
+      "brand_id": "a6cfc5bc-334b-401d-9def-120ca1206ae0",
+      "title": "Campaign_LIVE_AUDIT_20261029_1793256825630",
+      "description": "Q4 Launch Campaign",
+      "external_reference": null,
+      "owner": "Morgan Lead",
+      "status": "draft",
+      "release_notes": null,
+      "released_at": null,
+      "released_by": null,
+      "created_at": "2026-10-29T06:53:51.060611Z",
+      "updated_at": "2026-10-29T06:53:51.060611Z",
+      "asset_count": 0,
+      "latest_audit_id": null,
+      "latest_readiness": null,
+      "latest_audit_stale": false,
+      "blocker_count": 0,
+      "warning_count": 0,
+      "assets": []
+    },
+    "asset1": {
+      "id": "dfad7f4a-6169-4077-9d42-e97fa2eef664",
+      "campaign_id": "6b7b8cf6-b6ba-4cd6-b7ae-5a10cbbfd225",
+      "brand_id": "a6cfc5bc-334b-401d-9def-120ca1206ae0",
+      "asset_id": "726911c1-c04a-4f94-9f0a-9d8743ff8376",
+      "asset_title": "Summer Campaign Landing Page",
+      "selected_submission_id": "afd7e9b0-bdf0-4b11-981f-2a9f9999c2af",
+      "revision_number": 2,
+      "content_hash": "39be5ee456137cc9dac833222ab9d687e25186111bac333683b98177184b09b1",
+      "workflow_status": "in_review",
+      "channel_role": "landing_page",
+      "display_order": 0,
+      "notes": null,
+      "added_by": "Morgan Lead",
+      "added_at": "2026-10-29T06:53:51.157919Z"
+    },
+    "reopenedCamp": {
+      "id": "6b7b8cf6-b6ba-4cd6-b7ae-5a10cbbfd225",
+      "brand_id": "a6cfc5bc-334b-401d-9def-120ca1206ae0",
+      "title": "Campaign_LIVE_AUDIT_20261029_1793256825630",
+      "description": "Q4 Launch Campaign",
+      "external_reference": null,
+      "owner": "Morgan Lead",
+      "status": "draft",
+      "release_notes": null,
+      "released_at": null,
+      "released_by": null,
+      "created_at": "2026-10-29T06:53:51.060611Z",
+      "updated_at": "2026-10-29T06:53:51.060611Z",
+      "asset_count": 1,
+      "latest_audit_id": null,
+      "latest_readiness": null,
+      "latest_audit_stale": false,
+      "blocker_count": 0,
+      "warning_count": 0,
+      "assets": [
+        {
+          "id": "dfad7f4a-6169-4077-9d42-e97fa2eef664",
+          "campaign_id": "6b7b8cf6-b6ba-4cd6-b7ae-5a10cbbfd225",
+          "brand_id": "a6cfc5bc-334b-401d-9def-120ca1206ae0",
+          "asset_id": "726911c1-c04a-4f94-9f0a-9d8743ff8376",
+          "asset_title": "Summer Campaign Landing Page",
+          "selected_submission_id": "afd7e9b0-bdf0-4b11-981f-2a9f9999c2af",
+          "revision_number": 2,
+          "content_hash": "39be5ee456137cc9dac833222ab9d687e25186111bac333683b98177184b09b1",
+          "workflow_status": "in_review",
+          "channel_role": "landing_page",
+          "display_order": 0,
+          "notes": null,
+          "added_by": "Morgan Lead",
+          "added_at": "2026-10-29T06:53:51.157919Z"
+        }
+      ]
+    }
+  }
+}

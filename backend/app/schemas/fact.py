@@ -162,3 +162,44 @@ class FactSummary(BaseModel):
     by_effective_state: dict[str, int]
     by_review_state: dict[str, int]
     review_warning_days: int
+
+
+class FactApprovalInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    approval_notes: str | None = Field(None, max_length=1000, description="Reviewer notes justifying approval.")
+    actor: str | None = Field(None, max_length=200)
+    expected_version: int | None = Field(None, ge=1)
+
+
+class FactRejectionInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    rejection_reason: str = Field(..., min_length=1, max_length=1000, description="Mandatory reason for rejecting proposal.")
+    actor: str | None = Field(None, max_length=200)
+    expected_version: int | None = Field(None, ge=1)
+
+
+class FactApprovalDecisionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    fact_id: uuid.UUID
+    revision_number: int
+    decision: Literal["approved", "rejected"]
+    reviewer_name: str
+    reviewer_email: str | None
+    notes: str | None
+    created_at: datetime
+
+
+class FactComparisonRead(BaseModel):
+    fact_id: uuid.UUID
+    current_version: int
+    status: FactStatus
+    is_material_change: bool
+    proposed_by: str | None
+    change_reason: str | None
+    diff: dict
+    current_snapshot: dict
+    previous_approved_snapshot: dict | None
+    affected_content_count: int
+    recent_decisions: list[FactApprovalDecisionRead] = []
+

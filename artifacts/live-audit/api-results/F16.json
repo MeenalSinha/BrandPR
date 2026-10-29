@@ -1,0 +1,20 @@
+{
+  "item": {
+    "id": "F16",
+    "feature": "Role-aware reviewer decisions and approval notes",
+    "status": "PASS",
+    "liveTest": "Tested creator self-approval attempt: rejected with HTTP 403 ('reviewer_role_required').",
+    "evidence": "api-results/F16.json",
+    "finding": "Backend enforces role boundaries; content approval strictly requires reviewer authorization."
+  },
+  "details": {
+    "creatorAttempt": {
+      "error": {
+        "code": "reviewer_role_required",
+        "message": "Only a reviewer can do this.",
+        "details": [],
+        "request_id": "e8be6dfbb697"
+      }
+    }
+  }
+}

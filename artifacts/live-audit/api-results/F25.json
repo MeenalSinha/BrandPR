@@ -1,0 +1,11 @@
+{
+  "item": {
+    "id": "F25",
+    "feature": "Release controls and authorization",
+    "status": "FAIL",
+    "liveTest": "Release controls",
+    "evidence": "api-results/F25.json",
+    "finding": "Creator:403, Reviewer:422"
+  },
+  "details": {}
+}

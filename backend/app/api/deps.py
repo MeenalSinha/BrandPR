@@ -5,7 +5,7 @@ import uuid
 from fastapi import Depends, Header, Query
 from sqlalchemy.orm import Session
 
-from app.core.auth import decode_access_token
+from app.core.auth import decode_access_token, verify_oidc_token
 from app.core.config import get_settings
 from app.core.errors import ActorRequired, Forbidden, Unauthorized, ValidationFailed, field_error
 from app.db.session import get_db
@@ -23,7 +23,7 @@ def get_review_provider():
 
 
 # --------------------------------------------------------------------- authenticated identity
-ACTOR_ROLES = ("creator", "reviewer")
+ACTOR_ROLES = ("creator", "reviewer", "admin")
 
 
 @dataclass(frozen=True)
@@ -36,14 +36,18 @@ class Actor:
 
     @property
     def is_reviewer(self) -> bool:
-        return self.role == "reviewer"
+        return self.role in ("reviewer", "admin")
 
     @property
     def is_creator(self) -> bool:
-        return self.role == "creator"
+        return self.role in ("creator", "admin")
+
+    @property
+    def is_admin(self) -> bool:
+        return self.role == "admin"
 
     def can_access_brand(self, brand_id: uuid.UUID | str) -> bool:
-        if "*" in self.brand_ids:
+        if "*" in self.brand_ids or self.role == "admin":
             return True
         return str(brand_id) in self.brand_ids
 
@@ -56,7 +60,7 @@ def get_actor(
     """Extract authenticated actor identity.
 
     Priority:
-    1. Cryptographically verified Authorization: Bearer <jwt> token.
+    1. Cryptographically verified Authorization: Bearer <jwt> token (internal HMAC or external OIDC).
     2. In production or when auth_enforced=True: STRICTLY refuses caller-supplied role headers.
     3. In local test/development fallback only: allows demo headers when no token is supplied.
     """
@@ -65,17 +69,28 @@ def get_actor(
     # 1. Bearer token verification (Always trusted when valid)
     if authorization and authorization.strip().lower().startswith("bearer "):
         token = authorization.strip()[7:].strip()
+        payload = None
+        # Try HMAC app token first
         try:
             payload = decode_access_token(token, settings.jwt_secret)
+        except Exception:
+            # Fall back to OIDC token verification if configured
+            if settings.oidc_issuer or settings.oidc_audience:
+                try:
+                    payload = verify_oidc_token(token)
+                except Exception as oidc_err:
+                    raise Unauthorized(f"Invalid OIDC authentication token: {oidc_err}", code="invalid_token")
+            else:
+                raise Unauthorized("Invalid authentication token signature or expired.", code="invalid_token")
+
+        if payload:
             return Actor(
-                name=payload.get("name", "Authenticated User"),
+                name=payload.get("name") or payload.get("email") or "Authenticated User",
                 role=payload.get("role", "creator"),
                 email=payload.get("email", ""),
-                user_id=payload.get("sub", ""),
+                user_id=str(payload.get("sub", "")),
                 brand_ids=tuple(payload.get("brand_ids", ["*"])),
             )
-        except Exception as e:
-            raise Unauthorized(f"Invalid authentication token: {e}", code="invalid_token")
 
     # 2. Strict Production Guard: Do NOT rely on caller-supplied role headers
     if settings.app_env == "production" or settings.auth_enforced:
@@ -95,12 +110,19 @@ def get_actor(
 
 def require_reviewer(actor: Annotated[Actor, Depends(get_actor)]) -> Actor:
     if not actor.is_reviewer:
-        raise Forbidden("Only a reviewer can do this.", code="reviewer_role_required")
+        raise Forbidden("Only a reviewer or administrator can perform this action.", code="reviewer_role_required")
+    return actor
+
+
+def require_admin(actor: Annotated[Actor, Depends(get_actor)]) -> Actor:
+    if not actor.is_admin:
+        raise Forbidden("Only an administrator can perform this action.", code="admin_role_required")
     return actor
 
 
 CurrentActor = Annotated[Actor, Depends(get_actor)]
 ReviewerActor = Annotated[Actor, Depends(require_reviewer)]
+AdminActor = Annotated[Actor, Depends(require_admin)]
 
 
 def get_optional_actor(
@@ -124,4 +146,3 @@ def verify_brand_access(brand_id: uuid.UUID | str, actor: Actor | None) -> None:
     """Check that the actor has permission to access records for the given brand."""
     if actor is not None and not actor.can_access_brand(brand_id):
         raise Forbidden("You are not authorized to access records for this brand.", code="brand_access_denied")
-

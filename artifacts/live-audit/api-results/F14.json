@@ -1,0 +1,67 @@
+{
+  "item": {
+    "id": "F14",
+    "feature": "Revision history",
+    "status": "PASS",
+    "liveTest": "Queried revisions for content dabeb3e4-9091-472f-9260-9708f71a721c. Revisions present: 1, 2.",
+    "evidence": "api-results/F14.json",
+    "finding": "Complete revision lineage preserved with chronological ordering, distinct hashes, and review history."
+  },
+  "details": {
+    "revisions": [
+      {
+        "id": "dabeb3e4-9091-472f-9260-9708f71a721c",
+        "asset_id": "726911c1-c04a-4f94-9f0a-9d8743ff8376",
+        "brand_id": "a6cfc5bc-334b-401d-9def-120ca1206ae0",
+        "revision_number": 1,
+        "parent_submission_id": null,
+        "title": "Summer Campaign Landing Page",
+        "created_by": "Audit Creator",
+        "created_at": "2026-10-29T06:53:48.283893Z",
+        "change_note": null,
+        "char_count": 106,
+        "content_hash": "abba5f52a7281dfdfed9e276fcbb920610c690986394fb6de5ec676a39884cd4",
+        "workflow_status": "draft",
+        "is_latest": false,
+        "review_count": 1,
+        "latest_review": {
+          "id": "e11f9971-ae9d-4825-a1af-739b7e03ea3d",
+          "status": "completed_limited",
+          "analysis_mode": "limited",
+          "started_at": "2026-10-29T06:53:48.394577Z",
+          "completed_at": "2026-10-29T06:53:48.432788Z",
+          "counts": {
+            "supported": 0,
+            "unsupported": 1,
+            "conflicting": 0,
+            "outdated": 0,
+            "uncertain": 0
+          }
+        },
+        "decision": null,
+        "correction_count": 0,
+        "open_impact_count": 0
+      },
+      {
+        "id": "afd7e9b0-bdf0-4b11-981f-2a9f9999c2af",
+        "asset_id": "726911c1-c04a-4f94-9f0a-9d8743ff8376",
+        "brand_id": "a6cfc5bc-334b-401d-9def-120ca1206ae0",
+        "revision_number": 2,
+        "parent_submission_id": "dabeb3e4-9091-472f-9260-9708f71a721c",
+        "title": "Summer Campaign Landing Page",
+        "created_by": "Morgan Lead",
+        "created_at": "2026-10-29T06:53:49.408687Z",
+        "change_note": null,
+        "char_count": 80,
+        "content_hash": "39be5ee456137cc9dac833222ab9d687e25186111bac333683b98177184b09b1",
+        "workflow_status": "draft",
+        "is_latest": true,
+        "review_count": 0,
+        "latest_review": null,
+        "decision": null,
+        "correction_count": 0,
+        "open_impact_count": 0
+      }
+    ]
+  }
+}

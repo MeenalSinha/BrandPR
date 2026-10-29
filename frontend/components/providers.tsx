@@ -1,7 +1,7 @@
 "use client";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { api, errorMessage, setIdentity } from "@/lib/api";
+import { api, errorMessage, setAuthToken, setIdentity } from "@/lib/api";
 import { useStoredState } from "@/lib/hooks";
 import type { ActorRole, Brand } from "@/types/api";
 
@@ -76,9 +76,16 @@ export function BrandProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Automatically exchange active demo role for a cryptographically verified JWT Bearer token
-    api.login({ demo_role: role }).catch(() => {
-      // fallback or offline dev
-    });
+    api.login({ demo_role: role })
+      .then((res) => {
+        if (res?.access_token) {
+          setAuthToken(res.access_token);
+          setIdentity(res.user.name, res.user.role, res.user.email);
+        }
+      })
+      .catch(() => {
+        // fallback or offline dev
+      });
   }, [role]);
 
   useEffect(() => {

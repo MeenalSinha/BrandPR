@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     jwt_secret: str = "brandpr-production-secure-jwt-key-32chars"
     auth_enforced: bool = False
 
+    # Managed Identity (OIDC / Google Identity Platform / Firebase)
+    oidc_issuer: str = ""
+    oidc_audience: str = ""
+    oidc_jwks_url: str = ""
+    session_expiry_seconds: int = 86400 * 7
+
     # Testing aid (Phase 3): shifts the date used by validity and expiry rules, so expiry behaviour can be exercised
     # against a running server without waiting. Only today() is shifted; stored timestamps stay real. Refused in production.
     clock_offset_days: int = 0

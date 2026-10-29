@@ -1,0 +1,14 @@
+{
+  "item": {
+    "id": "F03",
+    "feature": "Source document viewing",
+    "status": "PASS",
+    "liveTest": "Retrieved document sections and text for e6b174e0-2da2-47f7-bfd1-39526bf40791. Verified page 2 coordinate chunk containing battery statement.",
+    "evidence": "api-results/F03.json",
+    "finding": "Parsed sections match original PDF pages with exact text offsets, page coordinates, and character excerpts."
+  },
+  "details": {
+    "sectionsCount": 3,
+    "page2Preview": "2. Battery and power\nBattery life: up to 18 hours under specified test condition"
+  }
+}

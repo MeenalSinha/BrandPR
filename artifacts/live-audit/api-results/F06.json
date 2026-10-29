@@ -1,0 +1,60 @@
+{
+  "item": {
+    "id": "F06",
+    "feature": "Evidence-backed marketing content review",
+    "status": "PASS",
+    "liveTest": "Submitted marketing content draft and executed review run e11f9971-ae9d-4825-a1af-739b7e03ea3d. Reopened review run to verify persistence.",
+    "evidence": "api-results/F06.json",
+    "finding": "Review run processed content, persisted findings and citation graph, and reloaded accurately from Cloud SQL."
+  },
+  "details": {
+    "reviewRun1": {
+      "id": "e11f9971-ae9d-4825-a1af-739b7e03ea3d",
+      "brand_id": "a6cfc5bc-334b-401d-9def-120ca1206ae0",
+      "content_submission_id": "dabeb3e4-9091-472f-9260-9708f71a721c",
+      "status": "completed_limited",
+      "analysis_mode": "limited",
+      "content_hash": "abba5f52a7281dfdfed9e276fcbb920610c690986394fb6de5ec676a39884cd4",
+      "requested_by": "Audit Creator",
+      "started_at": "2026-10-29T06:53:48.394577Z",
+      "completed_at": "2026-10-29T06:53:48.432788Z",
+      "provider_name": null,
+      "model_name": null,
+      "error_code": null,
+      "error_message": null,
+      "counts": {
+        "supported": 0,
+        "unsupported": 1,
+        "conflicting": 0,
+        "outdated": 0,
+        "uncertain": 0
+      },
+      "limitations": [
+        "Limited analysis: no AI provider is configured (LLM_API_KEY is empty), so only deterministic rules were applied. Claims written as paraphrases, and paraphrased support in approved facts, cannot be recognised. A result of 'no findings' does not mean the content has no claims."
+      ],
+      "notes": [],
+      "total_findings": 1,
+      "findings": [
+        {
+          "id": "290436a9-d6f5-407e-9197-24ca9e29c67a",
+          "review_run_id": "e11f9971-ae9d-4825-a1af-739b7e03ea3d",
+          "claim_index": 0,
+          "claim_text": "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+          "claim_category": "quantitative",
+          "start_offset": 0,
+          "end_offset": 80,
+          "status": "unsupported",
+          "severity": "high",
+          "explanation": "No suitable approved evidence was found for this claim. Unsupported does not mean the claim is false; it means the approved knowledge base does not substantiate it. A fact with matching wording, “Battery life: Up to 16 hours”, exists but has not been approved (status: proposed), so it cannot be used as evidence.",
+          "recommended_action": "Remove the claim, reword it to match an approved fact, or ask the owner to add and approve evidence for it.",
+          "requires_human_review": true,
+          "method": "deterministic",
+          "extraction_method": "deterministic",
+          "matched_fact_id": null,
+          "evidence": [],
+          "created_at": "2026-10-29T06:53:48.411553Z"
+        }
+      ]
+    }
+  }
+}

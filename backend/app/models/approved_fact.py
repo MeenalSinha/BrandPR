@@ -102,3 +102,25 @@ class FactRevision(Base):
     changed_by: Mapped[str | None] = mapped_column(String(200))
     change_reason: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class FactApprovalDecision(Base):
+    """Auditable reviewer decisions (approve / reject) on fact versions and proposals."""
+
+    __tablename__ = "fact_approval_decisions"
+    __table_args__ = (
+        CheckConstraint("decision IN ('approved', 'rejected')", name="ck_fact_approval_decision_type"),
+        Index("ix_fact_approval_decisions_fact_id", "fact_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
+    fact_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("approved_facts.id", ondelete="CASCADE"), nullable=False
+    )
+    revision_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    decision: Mapped[str] = mapped_column(String(20), nullable=False)
+    reviewer_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    reviewer_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+

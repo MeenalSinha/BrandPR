@@ -1,0 +1,78 @@
+{
+  "item": {
+    "id": "F27",
+    "feature": "Sample marketing copy",
+    "status": "PASS",
+    "liveTest": "Submitted standard sample copy. Review completed with 1 findings.",
+    "evidence": "api-results/F27.json",
+    "finding": "Sample marketing copy review executes cleanly through the live pipeline without unintended errors."
+  },
+  "details": {
+    "sampleSub": {
+      "id": "46e34dde-09bd-4128-8efe-c68b5aa59548",
+      "brand_id": "a6cfc5bc-334b-401d-9def-120ca1206ae0",
+      "asset_id": "fba1a4f6-2cb3-41ca-a7e9-5926fe5faa03",
+      "revision_number": 1,
+      "parent_submission_id": null,
+      "workflow_status": "draft",
+      "is_latest": true,
+      "change_note": null,
+      "title": "Sample Marketing Copy Submission",
+      "content": "Nova product brochure: Battery life is up to 18 hours under specified test conditions.",
+      "content_hash": "6d928569bb26a07b7df4e3cd15fed0996f127c0ad7aaebcff5b475744dd4d5f9",
+      "submitted_by": "Demo User",
+      "created_at": "2026-10-29T06:53:53.457139Z",
+      "updated_at": "2026-10-29T06:53:53.457139Z",
+      "review_count": 0,
+      "latest_review": null
+    },
+    "sampleRun": {
+      "id": "f63a9da9-5471-4d55-9e77-22203f736a1c",
+      "brand_id": "a6cfc5bc-334b-401d-9def-120ca1206ae0",
+      "content_submission_id": "46e34dde-09bd-4128-8efe-c68b5aa59548",
+      "status": "completed_limited",
+      "analysis_mode": "limited",
+      "content_hash": "6d928569bb26a07b7df4e3cd15fed0996f127c0ad7aaebcff5b475744dd4d5f9",
+      "requested_by": "Demo User",
+      "started_at": "2026-10-29T06:53:53.561727Z",
+      "completed_at": "2026-10-29T06:53:53.602321Z",
+      "provider_name": null,
+      "model_name": null,
+      "error_code": null,
+      "error_message": null,
+      "counts": {
+        "supported": 0,
+        "unsupported": 1,
+        "conflicting": 0,
+        "outdated": 0,
+        "uncertain": 0
+      },
+      "limitations": [
+        "Limited analysis: no AI provider is configured (LLM_API_KEY is empty), so only deterministic rules were applied. Claims written as paraphrases, and paraphrased support in approved facts, cannot be recognised. A result of 'no findings' does not mean the content has no claims."
+      ],
+      "notes": [],
+      "total_findings": 1,
+      "findings": [
+        {
+          "id": "dd1d570c-40e7-4048-ad8f-487d4879c8c1",
+          "review_run_id": "f63a9da9-5471-4d55-9e77-22203f736a1c",
+          "claim_index": 0,
+          "claim_text": "Nova product brochure: Battery life is up to 18 hours under specified test conditions.",
+          "claim_category": "quantitative",
+          "start_offset": 0,
+          "end_offset": 86,
+          "status": "unsupported",
+          "severity": "high",
+          "explanation": "No suitable approved evidence was found for this claim. Unsupported does not mean the claim is false; it means the approved knowledge base does not substantiate it.",
+          "recommended_action": "Remove the claim, reword it to match an approved fact, or ask the owner to add and approve evidence for it.",
+          "requires_human_review": true,
+          "method": "deterministic",
+          "extraction_method": "deterministic",
+          "matched_fact_id": null,
+          "evidence": [],
+          "created_at": "2026-10-29T06:53:53.582188Z"
+        }
+      ]
+    }
+  }
+}

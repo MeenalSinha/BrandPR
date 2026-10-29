@@ -1,0 +1,26 @@
+[
+  {
+    "case": "Empty content",
+    "status": "PASS",
+    "code": 422
+  },
+  {
+    "case": "Whitespace-only input",
+    "status": "PASS",
+    "code": 422
+  },
+  {
+    "case": "Missing required fields",
+    "status": "PASS",
+    "code": 422
+  },
+  {
+    "case": "Invalid record identifier",
+    "status": "PASS",
+    "code": 404
+  },
+  {
+    "case": "CORS unapproved origin",
+    "status": "PASS"
+  }
+]

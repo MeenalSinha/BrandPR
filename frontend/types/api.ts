@@ -177,6 +177,32 @@ export interface FactStatusInput {
   expected_version?: number | null;
 }
 
+export interface FactApprovalDecision {
+  id: string;
+  fact_id: string;
+  revision_number: number;
+  decision: "approved" | "rejected";
+  reviewer_name: string;
+  reviewer_email: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface FactComparison {
+  fact_id: string;
+  current_version: number;
+  status: FactStatus;
+  is_material_change: boolean;
+  proposed_by: string | null;
+  change_reason: string | null;
+  diff: Record<string, { old: unknown; new: unknown }>;
+  current_snapshot: Record<string, unknown>;
+  previous_approved_snapshot: Record<string, unknown> | null;
+  affected_content_count: number;
+  recent_decisions: FactApprovalDecision[];
+}
+
+
 export interface ApiErrorDetail {
   field: string | null;
   message: string;

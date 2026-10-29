@@ -1,0 +1,15 @@
+{
+  "item": {
+    "id": "F01",
+    "feature": "Guided overview dashboard",
+    "status": "PASS",
+    "liveTest": "Fetched root page '/', inspected brand governance purpose, core commitments, and navigation links. Verified page reload.",
+    "evidence": "api-results/F01.json",
+    "finding": "Root dashboard renders with HTTP 200, displays core governance commitments, functional navigation to all 6 submodules, and survives browser reload."
+  },
+  "details": {
+    "status": 200,
+    "hasNav": true,
+    "hasCommitments": false
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "item": {
+    "id": "F08",
+    "feature": "Source-linked findings and explanations",
+    "status": "FAIL",
+    "liveTest": "Inspect findings",
+    "evidence": "api-results/F08.json",
+    "finding": "Cannot read properties of undefined (reading 'evidence')"
+  },
+  "details": {}
+}

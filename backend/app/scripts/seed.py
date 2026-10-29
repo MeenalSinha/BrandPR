@@ -23,7 +23,9 @@ from app.models import (
     FactRevision, FindingEvidence, ReviewFinding, ReviewRun, RevisionCorrection, RiskOverride, SourceDocument, WorkflowEvent,
     Campaign, CampaignAsset, CampaignAudit, CampaignAuditFinding, CampaignReleaseDecision,
     GuidelineRule, GuidelineRuleVersion, GuidelineLintResult, PolicySimulation, PolicySimulationResult,
+    User, BrandMembership,
 )
+from app.core.auth import hash_password
 
 # Phase 4 history tables are append-only (a trigger rejects DELETE). This development-only reset lifts that inside its own
 # transaction, for this brand's rows only; the triggers are re-enabled before the commit.
@@ -254,6 +256,36 @@ def seed(db: Session) -> None:
         review_run_id=run_launch_2.id,
         rationale="All claims verified against approved specifications. Avoided terminology and contradictions resolved.",
     ), reviewer_actor)
+
+    # Seed managed identity demo accounts in users table
+    creator_user = db.scalar(select(User).where(User.email == "creator@brandpr.internal"))
+    if not creator_user:
+        creator_user = User(
+            email="creator@brandpr.internal",
+            name="Morgan Lead",
+            hashed_password=hash_password("brandpr_creator_demo"),
+            auth_provider="local",
+            is_active=True,
+        )
+        db.add(creator_user)
+        db.flush()
+        db.add(BrandMembership(user_id=creator_user.id, brand_id=brand.id, role="creator"))
+
+    reviewer_user = db.scalar(select(User).where(User.email == "reviewer@brandpr.internal"))
+    if not reviewer_user:
+        reviewer_user = User(
+            email="reviewer@brandpr.internal",
+            name="Alex Compliance",
+            hashed_password=hash_password("brandpr_reviewer_demo"),
+            auth_provider="local",
+            is_active=True,
+        )
+        db.add(reviewer_user)
+        db.flush()
+        db.add(BrandMembership(user_id=reviewer_user.id, brand_id=brand.id, role="reviewer"))
+
+    db.commit()
+
 
 
 def main() -> int:

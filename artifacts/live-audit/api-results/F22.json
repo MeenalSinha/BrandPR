@@ -1,0 +1,111 @@
+{
+  "item": {
+    "id": "F22",
+    "feature": "Campaign-wide consistency audit",
+    "status": "PASS",
+    "liveTest": "Ran campaign consistency audit: detected cross-asset contradiction between landing page (12 hrs) and billboard (24 hrs).",
+    "evidence": "api-results/F22.json",
+    "finding": "Campaign consistency audit detects cross-document claim contradictions and identifies hard release blockers."
+  },
+  "details": {
+    "audit1": {
+      "id": "8e5e7669-2d12-490b-8167-40cf81856583",
+      "campaign_id": "6b7b8cf6-b6ba-4cd6-b7ae-5a10cbbfd225",
+      "audit_number": 1,
+      "status": "completed",
+      "readiness_outcome": "blocked",
+      "is_stale": false,
+      "stale_reason": null,
+      "asset_count": 1,
+      "blocker_count": 1,
+      "warning_count": 1,
+      "review_required_count": 1,
+      "passed_checks_count": 1,
+      "summary": {
+        "checks_executed": [
+          "review_completeness",
+          "asset_approval_status",
+          "fact_consistency",
+          "fact_expiry_and_impacts",
+          "human_review_requirements",
+          "guideline_compliance",
+          "cross_asset_consistency"
+        ],
+        "evaluated_assets": [
+          {
+            "title": "Summer Campaign Landing Page",
+            "asset_id": "726911c1-c04a-4f94-9f0a-9d8743ff8376",
+            "content_hash": "39be5ee456137cc9dac833222ab9d687e25186111bac333683b98177184b09b1",
+            "submission_id": "afd7e9b0-bdf0-4b11-981f-2a9f9999c2af",
+            "revision_number": 2,
+            "workflow_status": "in_review"
+          }
+        ],
+        "evaluated_facts_versions": {},
+        "evaluated_rules_versions": {}
+      },
+      "created_by": "Morgan Lead",
+      "created_at": "2026-10-29T06:53:51.777854Z",
+      "findings": [
+        {
+          "id": "1553656d-09bf-4ca7-a47a-7e2e6c57968b",
+          "audit_id": "8e5e7669-2d12-490b-8167-40cf81856583",
+          "asset_id": "726911c1-c04a-4f94-9f0a-9d8743ff8376",
+          "asset_title": "Summer Campaign Landing Page",
+          "submission_id": "afd7e9b0-bdf0-4b11-981f-2a9f9999c2af",
+          "revision_number": 2,
+          "content_hash": "39be5ee456137cc9dac833222ab9d687e25186111bac333683b98177184b09b1",
+          "finding_type": "human_review_required",
+          "severity": "warning",
+          "confidence": "uncertain",
+          "claim_text": "Summer Campaign: Battery life is up to 12 hours under specified test conditions.",
+          "explanation": "Claim in asset 'Summer Campaign Landing Page' is unsupported and requires human verification.",
+          "recommended_action": "Provide supporting documentation or approve an exception.",
+          "requires_human_review": true,
+          "related_asset_id": null,
+          "related_asset_title": null,
+          "related_submission_id": null,
+          "related_fact_id": null,
+          "related_fact_version": null,
+          "related_rule_id": null,
+          "related_rule_version": null,
+          "related_impact_id": null,
+          "related_review_finding_id": "5cceff3e-1d74-4cfb-a297-2bb8a2a061b0",
+          "source_document_id": null,
+          "source_page": null,
+          "source_excerpt": null,
+          "created_at": "2026-10-29T06:53:51.777854Z"
+        },
+        {
+          "id": "3d0e3790-b558-4499-bf26-de25c685bf01",
+          "audit_id": "8e5e7669-2d12-490b-8167-40cf81856583",
+          "asset_id": "726911c1-c04a-4f94-9f0a-9d8743ff8376",
+          "asset_title": "Summer Campaign Landing Page",
+          "submission_id": "afd7e9b0-bdf0-4b11-981f-2a9f9999c2af",
+          "revision_number": 2,
+          "content_hash": "39be5ee456137cc9dac833222ab9d687e25186111bac333683b98177184b09b1",
+          "finding_type": "incomplete_approval",
+          "severity": "hard_blocker",
+          "confidence": "confirmed",
+          "claim_text": null,
+          "explanation": "Asset 'Summer Campaign Landing Page' (revision 2) is in 'in_review' status and has not been approved.",
+          "recommended_action": "Review and approve the asset revision before campaign release.",
+          "requires_human_review": false,
+          "related_asset_id": null,
+          "related_asset_title": null,
+          "related_submission_id": null,
+          "related_fact_id": null,
+          "related_fact_version": null,
+          "related_rule_id": null,
+          "related_rule_version": null,
+          "related_impact_id": null,
+          "related_review_finding_id": null,
+          "source_document_id": null,
+          "source_page": null,
+          "source_excerpt": null,
+          "created_at": "2026-10-29T06:53:51.777854Z"
+        }
+      ]
+    }
+  }
+}

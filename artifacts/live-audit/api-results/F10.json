@@ -1,0 +1,11 @@
+{
+  "item": {
+    "id": "F10",
+    "feature": "Automatic impact detection after material fact changes",
+    "status": "FAIL",
+    "liveTest": "Impact check",
+    "evidence": "api-results/F10.json",
+    "finding": "No impact record"
+  },
+  "details": {}
+}

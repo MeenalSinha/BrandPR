@@ -1,0 +1,16 @@
+{
+  "item": {
+    "id": "F09",
+    "feature": "Deterministic limited review mode",
+    "status": "PASS",
+    "liveTest": "Verified reviewRun status='completed_limited', analysis_mode='limited'. Checked limitation disclosure notes.",
+    "evidence": "api-results/F09.json",
+    "finding": "Deterministic review operates without hallucination when LLM_API_KEY is unset; limitation disclosure is clear and honest."
+  },
+  "details": {
+    "status": "completed_limited",
+    "limitations": [
+      "Limited analysis: no AI provider is configured (LLM_API_KEY is empty), so only deterministic rules were applied. Claims written as paraphrases, and paraphrased support in approved facts, cannot be recognised. A result of 'no findings' does not mean the content has no claims."
+    ]
+  }
+}

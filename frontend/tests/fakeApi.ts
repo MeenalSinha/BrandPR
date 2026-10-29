@@ -419,6 +419,57 @@ export class FakeApi {
       });
       return this.json(201, f);
     }
+    if ((m = p.match(/^\/facts\/([^/]+)\/approve$/))) {
+      const f = this.facts.find((x) => x.id === m![1]);
+      if (!f) return this.error(404, "not_found", "Fact not found");
+      f.status = "active";
+      f.effective_state = "current";
+      f.version += 1;
+      f.approved_at = "2026-10-29T12:00:00Z";
+      f.approved_by = "Alex Compliance";
+      return this.json(200, f);
+    }
+    if ((m = p.match(/^\/facts\/([^/]+)\/reject$/))) {
+      const f = this.facts.find((x) => x.id === m![1]);
+      if (!f) return this.error(404, "not_found", "Fact not found");
+      f.status = "rejected";
+      f.effective_state = "unapproved";
+      f.version += 1;
+      return this.json(200, f);
+    }
+    if ((m = p.match(/^\/facts\/([^/]+)\/comparison$/))) {
+      const f = this.facts.find((x) => x.id === m![1]);
+      if (!f) return this.error(404, "not_found", "Fact not found");
+      return this.json(200, {
+        fact_id: f.id,
+        current_version: f.version,
+        status: f.status,
+        is_material_change: f.version > 1,
+        proposed_by: "Morgan Lead",
+        change_reason: "Specification update",
+        diff: { value: { old: "Previous value", new: f.value } },
+        current_snapshot: { ...f },
+        previous_approved_snapshot: { ...f, value: "Previous value", version: f.version - 1 },
+        affected_content_count: 0,
+        recent_decisions: [],
+      });
+    }
+    if ((m = p.match(/^\/facts\/([^/]+)\/decisions$/))) {
+      return this.json(200, []);
+    }
+    if (p === "/auth/login") {
+      return this.json(200, {
+        access_token: "fake-jwt-token-reviewer",
+        token_type: "bearer",
+        user: { id: "usr-01", name: "Alex Compliance", email: "reviewer@brandpr.internal", role: "reviewer", brand_ids: ["*"] }
+      });
+    }
+    if (p === "/auth/me") {
+      return this.json(200, {
+        name: "Alex Compliance", role: "reviewer", email: "reviewer@brandpr.internal", user_id: "usr-01",
+        brand_ids: ["*"], is_reviewer: true, is_creator: true, is_admin: false
+      });
+    }
     if ((m = p.match(/^\/facts\/([^/]+)\/revisions$/))) return this.json(200, [{ id: this.id(), fact_id: m[1], revision_number: 1, action: "created", changes: {}, snapshot: {}, changed_by: "Meenal", change_reason: null, created_at: "2026-10-01T00:00:00Z" }]);
     if ((m = p.match(/^\/facts\/([^/]+)\/status$/))) {
       const f = this.facts.find((x) => x.id === m![1])!;

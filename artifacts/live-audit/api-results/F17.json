@@ -1,0 +1,11 @@
+{
+  "item": {
+    "id": "F17",
+    "feature": "Fact-change impact resolution",
+    "status": "FAIL",
+    "liveTest": "Resolve impact",
+    "evidence": "api-results/F17.json",
+    "finding": "Cannot read properties of undefined (reading 'id')"
+  },
+  "details": {}
+}

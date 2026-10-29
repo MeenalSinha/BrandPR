@@ -24,17 +24,25 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-brandpr}:${POSTGRES_PASSWORD:-brandpr_dev_password}@db:5432/${POSTGRES_DB:-brandpr}
       CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
       STORAGE_DIR: /data/storage
+      JWT_SECRET: ${JWT_SECRET:-brandpr-production-secure-jwt-key-32chars}
     ports: ["8000:8000"]
     volumes: ["uploads:/data/storage"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/api/health\")'"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
 
   frontend:
     build:
       context: ./frontend
       args:
         BACKEND_URL: http://backend:8000
-    depends_on: [backend]
+    depends_on:
+      backend: { condition: service_healthy }
     environment:
       BACKEND_URL: http://backend:8000
+      NODE_ENV: production
     ports: ["3000:3000"]
 
 volumes:

@@ -1,0 +1,214 @@
+{
+  "item": {
+    "id": "F20",
+    "feature": "Metrics derived from stored records",
+    "status": "PASS",
+    "liveTest": "Queried Governance Insights for brand a6cfc5bc-334b-401d-9def-120ca1206ae0: completed_reviews=3, total_findings=3.",
+    "evidence": "api-results/F20.json",
+    "finding": "Insights metrics compute live aggregations directly from persisted database records without mock data."
+  },
+  "details": {
+    "insights": {
+      "brand_id": "a6cfc5bc-334b-401d-9def-120ca1206ae0",
+      "period": "all",
+      "overview": {
+        "completed_reviews": 3,
+        "total_findings": 3,
+        "open_impacts": 0,
+        "decisions": {
+          "approved": 0,
+          "changes_requested": 0,
+          "rejected": 0
+        },
+        "rules_summary": {
+          "active": 0,
+          "proposed": 1,
+          "retired": 0,
+          "total": 1
+        },
+        "campaigns_summary": {
+          "total_campaigns": 0,
+          "by_status": {}
+        }
+      },
+      "finding_patterns": {
+        "by_status": {
+          "unsupported": 3
+        },
+        "by_severity": {
+          "high": 3
+        },
+        "by_category": {
+          "quantitative": 3
+        },
+        "top_problematic_terms": [
+          {
+            "term": "battery",
+            "count": 3,
+            "samples": [
+              "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+              "Battery life is up to 28 hours under specified test conditions.",
+              "Summer Campaign: Battery life is up to 12 hours under specified test conditions."
+            ]
+          },
+          {
+            "term": "life",
+            "count": 3,
+            "samples": [
+              "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+              "Battery life is up to 28 hours under specified test conditions.",
+              "Summer Campaign: Battery life is up to 12 hours under specified test conditions."
+            ]
+          },
+          {
+            "term": "hours",
+            "count": 3,
+            "samples": [
+              "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+              "Battery life is up to 28 hours under specified test conditions.",
+              "Summer Campaign: Battery life is up to 12 hours under specified test conditions."
+            ]
+          },
+          {
+            "term": "under",
+            "count": 3,
+            "samples": [
+              "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+              "Battery life is up to 28 hours under specified test conditions.",
+              "Summer Campaign: Battery life is up to 12 hours under specified test conditions."
+            ]
+          },
+          {
+            "term": "specified",
+            "count": 3,
+            "samples": [
+              "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+              "Battery life is up to 28 hours under specified test conditions.",
+              "Summer Campaign: Battery life is up to 12 hours under specified test conditions."
+            ]
+          }
+        ]
+      },
+      "repeated_issues": [
+        {
+          "term": "summer",
+          "occurrences": 2,
+          "representative_claims": [
+            "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+            "Summer Campaign: Battery life is up to 12 hours under specified test conditions."
+          ]
+        },
+        {
+          "term": "campaign",
+          "occurrences": 2,
+          "representative_claims": [
+            "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+            "Summer Campaign: Battery life is up to 12 hours under specified test conditions."
+          ]
+        },
+        {
+          "term": "battery",
+          "occurrences": 3,
+          "representative_claims": [
+            "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+            "Battery life is up to 28 hours under specified test conditions.",
+            "Summer Campaign: Battery life is up to 12 hours under specified test conditions."
+          ]
+        },
+        {
+          "term": "life",
+          "occurrences": 3,
+          "representative_claims": [
+            "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+            "Battery life is up to 28 hours under specified test conditions.",
+            "Summer Campaign: Battery life is up to 12 hours under specified test conditions."
+          ]
+        },
+        {
+          "term": "hours",
+          "occurrences": 3,
+          "representative_claims": [
+            "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+            "Battery life is up to 28 hours under specified test conditions.",
+            "Summer Campaign: Battery life is up to 12 hours under specified test conditions."
+          ]
+        },
+        {
+          "term": "under",
+          "occurrences": 3,
+          "representative_claims": [
+            "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+            "Battery life is up to 28 hours under specified test conditions.",
+            "Summer Campaign: Battery life is up to 12 hours under specified test conditions."
+          ]
+        },
+        {
+          "term": "specified",
+          "occurrences": 3,
+          "representative_claims": [
+            "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+            "Battery life is up to 28 hours under specified test conditions.",
+            "Summer Campaign: Battery life is up to 12 hours under specified test conditions."
+          ]
+        },
+        {
+          "term": "test",
+          "occurrences": 3,
+          "representative_claims": [
+            "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+            "Battery life is up to 28 hours under specified test conditions.",
+            "Summer Campaign: Battery life is up to 12 hours under specified test conditions."
+          ]
+        },
+        {
+          "term": "conditions",
+          "occurrences": 3,
+          "representative_claims": [
+            "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+            "Battery life is up to 28 hours under specified test conditions.",
+            "Summer Campaign: Battery life is up to 12 hours under specified test conditions."
+          ]
+        }
+      ],
+      "governance_recommendations": [
+        {
+          "category": "terminology",
+          "pattern": "Frequent review flags for 'battery' (3 times)",
+          "count": 3,
+          "representative_findings": [
+            "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+            "Battery life is up to 28 hours under specified test conditions.",
+            "Summer Campaign: Battery life is up to 12 hours under specified test conditions."
+          ],
+          "suggested_action": "Establish an explicit approved guideline rule or approved fact clarifying 'battery' usage.",
+          "requires_human_assessment": true
+        },
+        {
+          "category": "terminology",
+          "pattern": "Frequent review flags for 'life' (3 times)",
+          "count": 3,
+          "representative_findings": [
+            "Summer Campaign: Battery life is up to 16 hours under specified test conditions.",
+            "Battery life is up to 28 hours under specified test conditions.",
+            "Summer Campaign: Battery life is up to 12 hours under specified test conditions."
+          ],
+          "suggested_action": "Establish an explicit approved guideline rule or approved fact clarifying 'life' usage.",
+          "requires_human_assessment": true
+        },
+        {
+          "category": "risk_management",
+          "pattern": "3 high-severity findings recorded in review history",
+          "count": 3,
+          "representative_findings": [],
+          "suggested_action": "Check whether claims involve comparative statements or unapproved product specifications.",
+          "requires_human_assessment": true
+        }
+      ],
+      "simulations_summary": {
+        "total_simulations": 1,
+        "total_evaluated_content": 0,
+        "total_changed_outcomes": 0
+      }
+    }
+  }
+}

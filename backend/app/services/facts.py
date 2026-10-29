@@ -19,10 +19,11 @@ from sqlalchemy.orm import Session
 from app.core import clock
 from app.core.config import get_settings
 from app.core.errors import ConflictError, NotFoundError, ValidationFailed, field_error
-from app.models import ApprovedFact, FactRevision, SourceDocument
+from app.models import ApprovedFact, FactApprovalDecision, FactRevision, SourceDocument
 from app.models import DocumentSection
 from app.schemas.fact import (
-    FactCreate, FactRead, FactSourceRead, FactStatusUpdate, FactSummary, FactUpdate,
+    FactApprovalDecisionRead, FactApprovalInput, FactComparisonRead, FactCreate, FactRead, FactRejectionInput,
+    FactSourceRead, FactStatusUpdate, FactSummary, FactUpdate,
 )
 from app.services.brands import get_brand
 
@@ -403,3 +404,140 @@ def change_status(db: Session, fact_id: uuid.UUID, data: FactStatusUpdate) -> Ap
 def list_revisions(db: Session, fact_id: uuid.UUID) -> list[FactRevision]:
     get_fact(db, fact_id)
     return list(db.scalars(select(FactRevision).where(FactRevision.fact_id == fact_id).order_by(FactRevision.revision_number)))
+
+
+def approve_fact(
+    db: Session,
+    fact_id: uuid.UUID,
+    data: FactApprovalInput,
+    reviewer_name: str,
+    reviewer_email: str | None = None,
+) -> ApprovedFact:
+    """Approve a proposed fact version by an authorized compliance reviewer."""
+    fact = get_fact(db, fact_id, lock=True)
+    if data.expected_version is not None and data.expected_version != fact.version:
+        raise ConflictError("This fact was changed by someone else. Reload it and try again.", code="version_conflict")
+
+    _validate(db, fact.brand_id, {k: getattr(fact, k) for k in EDITABLE_FIELDS}, activating=True, check_source=False)
+    old_status = fact.status
+    fact.status = "active"
+    fact.approved_by = reviewer_name
+    fact.approved_at = clock.now()
+    fact.version += 1
+
+    # Record decision
+    decision = FactApprovalDecision(
+        fact_id=fact.id,
+        revision_number=fact.version,
+        decision="approved",
+        reviewer_name=reviewer_name,
+        reviewer_email=reviewer_email,
+        notes=data.approval_notes,
+    )
+    db.add(decision)
+
+    revision = _record(
+        db,
+        fact,
+        "status_changed",
+        {"status": {"old": old_status, "new": "active"}, "approval_notes": data.approval_notes},
+        reviewer_name,
+        data.approval_notes or "Compliance Reviewer Approval",
+    )
+    _propagate(db, fact, revision)
+    db.commit()
+    db.refresh(fact)
+    return fact
+
+
+def reject_fact(
+    db: Session,
+    fact_id: uuid.UUID,
+    data: FactRejectionInput,
+    reviewer_name: str,
+    reviewer_email: str | None = None,
+) -> ApprovedFact:
+    """Reject a proposed fact version by an authorized compliance reviewer."""
+    fact = get_fact(db, fact_id, lock=True)
+    if data.expected_version is not None and data.expected_version != fact.version:
+        raise ConflictError("This fact was changed by someone else. Reload it and try again.", code="version_conflict")
+
+    reason = data.rejection_reason.strip()
+    if not reason:
+        raise ValidationFailed("A rejection reason is required.", details=[field_error("rejection_reason", "Provide a reason for rejection.")])
+
+    old_status = fact.status
+    fact.status = "rejected"
+    fact.approved_by = None
+    fact.approved_at = None
+    fact.version += 1
+
+    decision = FactApprovalDecision(
+        fact_id=fact.id,
+        revision_number=fact.version,
+        decision="rejected",
+        reviewer_name=reviewer_name,
+        reviewer_email=reviewer_email,
+        notes=reason,
+    )
+    db.add(decision)
+
+    revision = _record(
+        db,
+        fact,
+        "status_changed",
+        {"status": {"old": old_status, "new": "rejected"}, "rejection_reason": reason},
+        reviewer_name,
+        reason,
+    )
+    _propagate(db, fact, revision)
+    db.commit()
+    db.refresh(fact)
+    return fact
+
+
+def compare_fact_versions(db: Session, fact_id: uuid.UUID) -> FactComparisonRead:
+    """Provide a structured side-by-side comparison of the proposed version vs prior approved state."""
+    fact = get_fact(db, fact_id)
+    revisions = list(db.scalars(select(FactRevision).where(FactRevision.fact_id == fact_id).order_by(FactRevision.revision_number.desc())).all())
+    decisions = list(db.scalars(select(FactApprovalDecision).where(FactApprovalDecision.fact_id == fact_id).order_by(FactApprovalDecision.created_at.desc())).all())
+
+    # Find the latest edit revision and the last approved snapshot
+    latest_rev = revisions[0] if revisions else None
+    diff = latest_rev.changes if latest_rev else {}
+    is_material = bool(MATERIAL_FIELDS & diff.keys())
+
+    prev_approved = None
+    for rev in revisions:
+        snap = rev.snapshot or {}
+        if snap.get("status") == "active":
+            prev_approved = snap
+            break
+
+    # Count affected content
+    from app.models.fact_change_impact import FactChangeImpact
+    affected_count = db.scalar(
+        select(func.count(FactChangeImpact.id)).where(FactChangeImpact.fact_id == fact_id)
+    ) or 0
+
+    current_snap = _snapshot(fact)
+
+    return FactComparisonRead(
+        fact_id=fact.id,
+        current_version=fact.version,
+        status=fact.status,
+        is_material_change=is_material,
+        proposed_by=latest_rev.changed_by if latest_rev else None,
+        change_reason=latest_rev.change_reason if latest_rev else None,
+        diff=diff,
+        current_snapshot=current_snap,
+        previous_approved_snapshot=prev_approved,
+        affected_content_count=affected_count,
+        recent_decisions=[FactApprovalDecisionRead.model_validate(d) for d in decisions[:10]],
+    )
+
+
+def list_fact_decisions(db: Session, fact_id: uuid.UUID) -> list[FactApprovalDecision]:
+    get_fact(db, fact_id)
+    return list(db.scalars(select(FactApprovalDecision).where(FactApprovalDecision.fact_id == fact_id).order_by(FactApprovalDecision.created_at.desc())))
+

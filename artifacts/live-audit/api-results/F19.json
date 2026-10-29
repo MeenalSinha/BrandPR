@@ -1,0 +1,206 @@
+{
+  "item": {
+    "id": "F19",
+    "feature": "Policy Sandbox",
+    "status": "PASS",
+    "liveTest": "Executed policy simulation e36f9446-c2dc-4b99-9726-b142730bbee5 testing proposed guideline text against historical content assets.",
+    "evidence": "api-results/F19.json",
+    "finding": "Policy Sandbox runs non-destructive what-if simulations against past assets without altering baseline rules."
+  },
+  "details": {
+    "sim": {
+      "id": "e36f9446-c2dc-4b99-9726-b142730bbee5",
+      "brand_id": "a6cfc5bc-334b-401d-9def-120ca1206ae0",
+      "rule_id": "b18f7787-665e-4990-a4e6-34b1f142735a",
+      "rule_title": "Comparative Superlatives",
+      "base_rule_version": 1,
+      "proposed_rule_version": 2,
+      "proposed_rule_snapshot": {
+        "scope": "all",
+        "category": "comparative_claims",
+        "rule_text": "Comparative claims must cite verified benchmark specifications.",
+        "conditions": null
+      },
+      "status": "completed",
+      "created_by": "Alex Compliance",
+      "created_at": "2026-10-29T06:53:50.647307Z",
+      "completed_at": "2026-10-29T06:53:50.663276Z",
+      "summary": {
+        "changed": 0,
+        "unchanged": 3,
+        "not_evaluable": 3,
+        "total_evaluated": 0,
+        "total_submissions": 3
+      },
+      "results": [
+        {
+          "id": "7e9adb35-4ca2-4fde-b5a8-dfb9cd9e3baa",
+          "simulation_id": "e36f9446-c2dc-4b99-9726-b142730bbee5",
+          "content_submission_id": "afd7e9b0-bdf0-4b11-981f-2a9f9999c2af",
+          "content_title": "Summer Campaign Landing Page",
+          "content_snippet": "Summer Campaign: Battery life is up to 12 hours under specified test conditions.",
+          "historical_review_run_id": "0a6dea85-fa35-487b-a4cf-f228ce040355",
+          "baseline_outcome": "not_evaluable",
+          "simulated_outcome": "not_evaluable",
+          "changed_findings": [
+            {
+              "source": "baseline",
+              "findings": []
+            },
+            {
+              "source": "proposed",
+              "findings": []
+            }
+          ],
+          "explanation": "Outcome remained NOT_EVALUABLE. Baseline: Rule lacks testable condition parameters (unstructured natural language). Marked not evaluable. | Proposed: Rule lacks testable condition parameters (unstructured natural language). Marked not evaluable.",
+          "evaluation_status": "not_evaluable",
+          "created_at": "2026-10-29T06:53:50.647307Z"
+        },
+        {
+          "id": "61de4816-3ab1-4a41-98b1-9f231014b228",
+          "simulation_id": "e36f9446-c2dc-4b99-9726-b142730bbee5",
+          "content_submission_id": "2598c8fa-df3b-424f-a8f6-1a27e40ecb5b",
+          "content_title": "Overclaim Copy",
+          "content_snippet": "Battery life is up to 28 hours under specified test conditions.",
+          "historical_review_run_id": "161b0e44-6b29-4612-92f5-429805c8e39f",
+          "baseline_outcome": "not_evaluable",
+          "simulated_outcome": "not_evaluable",
+          "changed_findings": [
+            {
+              "source": "baseline",
+              "findings": []
+            },
+            {
+              "source": "proposed",
+              "findings": []
+            }
+          ],
+          "explanation": "Outcome remained NOT_EVALUABLE. Baseline: Rule lacks testable condition parameters (unstructured natural language). Marked not evaluable. | Proposed: Rule lacks testable condition parameters (unstructured natural language). Marked not evaluable.",
+          "evaluation_status": "not_evaluable",
+          "created_at": "2026-10-29T06:53:50.647307Z"
+        },
+        {
+          "id": "28f7728c-5cd5-493d-be7e-dcc4349c8713",
+          "simulation_id": "e36f9446-c2dc-4b99-9726-b142730bbee5",
+          "content_submission_id": "dabeb3e4-9091-472f-9260-9708f71a721c",
+          "content_title": "Summer Campaign Landing Page",
+          "content_snippet": "Summer Campaign: Battery life is up to 16 hours under specified test conditions....",
+          "historical_review_run_id": "e11f9971-ae9d-4825-a1af-739b7e03ea3d",
+          "baseline_outcome": "not_evaluable",
+          "simulated_outcome": "not_evaluable",
+          "changed_findings": [
+            {
+              "source": "baseline",
+              "findings": []
+            },
+            {
+              "source": "proposed",
+              "findings": []
+            }
+          ],
+          "explanation": "Outcome remained NOT_EVALUABLE. Baseline: Rule lacks testable condition parameters (unstructured natural language). Marked not evaluable. | Proposed: Rule lacks testable condition parameters (unstructured natural language). Marked not evaluable.",
+          "evaluation_status": "not_evaluable",
+          "created_at": "2026-10-29T06:53:50.647307Z"
+        }
+      ],
+      "notice": "Simulations evaluate proposed changes against historical content without modifying past review records or activating the rule."
+    },
+    "reloadSim": {
+      "id": "e36f9446-c2dc-4b99-9726-b142730bbee5",
+      "brand_id": "a6cfc5bc-334b-401d-9def-120ca1206ae0",
+      "rule_id": "b18f7787-665e-4990-a4e6-34b1f142735a",
+      "rule_title": "Comparative Superlatives",
+      "base_rule_version": 1,
+      "proposed_rule_version": 2,
+      "proposed_rule_snapshot": {
+        "scope": "all",
+        "category": "comparative_claims",
+        "rule_text": "Comparative claims must cite verified benchmark specifications.",
+        "conditions": null
+      },
+      "status": "completed",
+      "created_by": "Alex Compliance",
+      "created_at": "2026-10-29T06:53:50.647307Z",
+      "completed_at": "2026-10-29T06:53:50.663276Z",
+      "summary": {
+        "changed": 0,
+        "unchanged": 3,
+        "not_evaluable": 3,
+        "total_evaluated": 0,
+        "total_submissions": 3
+      },
+      "results": [
+        {
+          "id": "7e9adb35-4ca2-4fde-b5a8-dfb9cd9e3baa",
+          "simulation_id": "e36f9446-c2dc-4b99-9726-b142730bbee5",
+          "content_submission_id": "afd7e9b0-bdf0-4b11-981f-2a9f9999c2af",
+          "content_title": "Summer Campaign Landing Page",
+          "content_snippet": "Summer Campaign: Battery life is up to 12 hours under specified test conditions.",
+          "historical_review_run_id": "0a6dea85-fa35-487b-a4cf-f228ce040355",
+          "baseline_outcome": "not_evaluable",
+          "simulated_outcome": "not_evaluable",
+          "changed_findings": [
+            {
+              "source": "baseline",
+              "findings": []
+            },
+            {
+              "source": "proposed",
+              "findings": []
+            }
+          ],
+          "explanation": "Outcome remained NOT_EVALUABLE. Baseline: Rule lacks testable condition parameters (unstructured natural language). Marked not evaluable. | Proposed: Rule lacks testable condition parameters (unstructured natural language). Marked not evaluable.",
+          "evaluation_status": "not_evaluable",
+          "created_at": "2026-10-29T06:53:50.647307Z"
+        },
+        {
+          "id": "61de4816-3ab1-4a41-98b1-9f231014b228",
+          "simulation_id": "e36f9446-c2dc-4b99-9726-b142730bbee5",
+          "content_submission_id": "2598c8fa-df3b-424f-a8f6-1a27e40ecb5b",
+          "content_title": "Overclaim Copy",
+          "content_snippet": "Battery life is up to 28 hours under specified test conditions.",
+          "historical_review_run_id": "161b0e44-6b29-4612-92f5-429805c8e39f",
+          "baseline_outcome": "not_evaluable",
+          "simulated_outcome": "not_evaluable",
+          "changed_findings": [
+            {
+              "source": "baseline",
+              "findings": []
+            },
+            {
+              "source": "proposed",
+              "findings": []
+            }
+          ],
+          "explanation": "Outcome remained NOT_EVALUABLE. Baseline: Rule lacks testable condition parameters (unstructured natural language). Marked not evaluable. | Proposed: Rule lacks testable condition parameters (unstructured natural language). Marked not evaluable.",
+          "evaluation_status": "not_evaluable",
+          "created_at": "2026-10-29T06:53:50.647307Z"
+        },
+        {
+          "id": "28f7728c-5cd5-493d-be7e-dcc4349c8713",
+          "simulation_id": "e36f9446-c2dc-4b99-9726-b142730bbee5",
+          "content_submission_id": "dabeb3e4-9091-472f-9260-9708f71a721c",
+          "content_title": "Summer Campaign Landing Page",
+          "content_snippet": "Summer Campaign: Battery life is up to 16 hours under specified test conditions....",
+          "historical_review_run_id": "e11f9971-ae9d-4825-a1af-739b7e03ea3d",
+          "baseline_outcome": "not_evaluable",
+          "simulated_outcome": "not_evaluable",
+          "changed_findings": [
+            {
+              "source": "baseline",
+              "findings": []
+            },
+            {
+              "source": "proposed",
+              "findings": []
+            }
+          ],
+          "explanation": "Outcome remained NOT_EVALUABLE. Baseline: Rule lacks testable condition parameters (unstructured natural language). Marked not evaluable. | Proposed: Rule lacks testable condition parameters (unstructured natural language). Marked not evaluable.",
+          "evaluation_status": "not_evaluable",
+          "created_at": "2026-10-29T06:53:50.647307Z"
+        }
+      ],
+      "notice": "Simulations evaluate proposed changes against historical content without modifying past review records or activating the rule."
+    }
+  }
+}

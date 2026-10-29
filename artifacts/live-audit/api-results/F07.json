@@ -1,0 +1,11 @@
+{
+  "item": {
+    "id": "F07",
+    "feature": "Claim classification",
+    "status": "FAIL",
+    "liveTest": "Classify claims",
+    "evidence": "api-results/F07.json",
+    "finding": "supported:false, unsupported:true, conflicting:false"
+  },
+  "details": {}
+}

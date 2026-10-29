@@ -1,0 +1,71 @@
+{
+  "item": {
+    "id": "F18",
+    "feature": "Guideline Lint",
+    "status": "PASS",
+    "liveTest": "Created vague guideline rule b18f7787-665e-4990-a4e6-34b1f142735a. Ran Guideline Lint: detected 1 candidate ambiguity issues.",
+    "evidence": "api-results/F18.json",
+    "finding": "Guideline Lint analyzes rule text deterministically, identifying unquantified superlatives and ambiguous terms."
+  },
+  "details": {
+    "rule": {
+      "id": "b18f7787-665e-4990-a4e6-34b1f142735a",
+      "brand_id": "a6cfc5bc-334b-401d-9def-120ca1206ae0",
+      "title": "Comparative Superlatives",
+      "description": null,
+      "rule_text": "Always claim our products are the best and superior without qualification.",
+      "category": "comparative_claims",
+      "severity": "medium",
+      "scope": "all",
+      "conditions": null,
+      "examples": null,
+      "status": "proposed",
+      "source_document_id": null,
+      "source_page": null,
+      "source_excerpt": null,
+      "owner": null,
+      "created_by": "Morgan Lead",
+      "current_version": 1,
+      "created_at": "2026-10-29T06:53:50.417569Z",
+      "updated_at": "2026-10-29T06:53:50.417569Z",
+      "versions": [
+        {
+          "id": "4c40a1e9-df97-4333-ab41-88f46e6ae88d",
+          "rule_id": "b18f7787-665e-4990-a4e6-34b1f142735a",
+          "version_number": 1,
+          "rule_text": "Always claim our products are the best and superior without qualification.",
+          "conditions": null,
+          "examples": null,
+          "source_reference": null,
+          "change_reason": "Initial rule creation",
+          "created_by": "Morgan Lead",
+          "created_at": "2026-10-29T06:53:50.417569Z"
+        }
+      ]
+    },
+    "lint": {
+      "brand_id": "a6cfc5bc-334b-401d-9def-120ca1206ae0",
+      "total_issues": 1,
+      "issues": [
+        {
+          "id": "9c0bda30-62d4-4c67-9aa8-752e1a428bee",
+          "rule_id": "b18f7787-665e-4990-a4e6-34b1f142735a",
+          "rule_title": "Comparative Superlatives",
+          "rule_version": 1,
+          "issue_category": "vague_instruction",
+          "severity": "medium",
+          "explanation": "Rule 'Comparative Superlatives' uses subjective term 'superior' without measurable criteria or examples.",
+          "related_rule_id": null,
+          "related_rule_title": null,
+          "suggested_action": "Add approved positive and non-compliant negative examples or measurable guidelines.",
+          "requires_human_review": true,
+          "created_at": "2026-10-29T06:53:50.542144Z"
+        }
+      ],
+      "summary": {
+        "vague_instruction": 1
+      },
+      "notice": "Lint results highlight potential ambiguities or conflicts and require human assessment before modifying rules."
+    }
+  }
+}

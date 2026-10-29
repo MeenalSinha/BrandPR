@@ -1,0 +1,11 @@
+{
+  "item": {
+    "id": "F24",
+    "feature": "Release-readiness outcomes",
+    "status": "FAIL",
+    "liveTest": "Readiness evaluation",
+    "evidence": "api-results/F24.json",
+    "finding": "Blocked:true, Ready:false"
+  },
+  "details": {}
+}

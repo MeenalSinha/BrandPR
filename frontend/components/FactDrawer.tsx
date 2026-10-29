@@ -1,12 +1,12 @@
 "use client";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 
 import { SourceEvidence } from "@/components/SourceEvidence";
 import { Dialog, EffectiveBadge, Loading, Notice } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { CATEGORY_LABELS, formatDate, reviewText, STATUS_LABELS, WARNING_LABELS } from "@/lib/format";
 import { useResource } from "@/lib/hooks";
-import type { Fact, FactStatus } from "@/types/api";
+import type { Fact, FactComparison, FactStatus } from "@/types/api";
 
 const ACTIONS: Record<FactStatus, { to: FactStatus; label: string; danger?: boolean }[]> = {
   proposed: [{ to: "active", label: "Approve fact" }, { to: "rejected", label: "Reject", danger: true }],
@@ -24,7 +24,14 @@ export function FactDrawer({ fact, actor, onClose, onEdit, onChanged }: {
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [comparison, setComparison] = useState<FactComparison | null>(null);
   const history = useResource(() => api.factRevisions(fact.id), [fact.id, fact.version]);
+
+  useEffect(() => {
+    if (fact.status === "proposed" || fact.version > 1) {
+      api.getFactComparison(fact.id).then(setComparison).catch(() => {});
+    }
+  }, [fact.id, fact.version, fact.status]);
 
   async function confirm(e: FormEvent) {
     e.preventDefault();
@@ -33,7 +40,14 @@ export function FactDrawer({ fact, actor, onClose, onEdit, onChanged }: {
     setBusy(true);
     setError(null);
     try {
-      const updated = await api.setFactStatus(fact.id, { status: pending, actor: actor || null, reason: reason.trim() || null, expected_version: fact.version });
+      let updated: Fact;
+      if (pending === "active") {
+        updated = await api.approveFact(fact.id, { approval_notes: reason.trim() || "Approved by reviewer", expected_version: fact.version });
+      } else if (pending === "rejected") {
+        updated = await api.rejectFact(fact.id, { rejection_reason: reason.trim(), expected_version: fact.version });
+      } else {
+        updated = await api.setFactStatus(fact.id, { status: pending, actor: actor || null, reason: reason.trim() || null, expected_version: fact.version });
+      }
       setPending(null);
       setReason("");
       onChanged(updated, `${updated.name} is now ${STATUS_LABELS[updated.status].toLowerCase()}.`);
@@ -57,8 +71,47 @@ export function FactDrawer({ fact, actor, onClose, onEdit, onChanged }: {
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <EffectiveBadge state={fact.effective_state} />
             <span className="text-xs font-semibold px-2 py-0.5 rounded bg-surface-100 text-ink border border-rule">{STATUS_LABELS[fact.status]}</span>
+            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-paper text-ink-soft border border-rule">v{fact.version}</span>
           </div>
         </div>
+
+        {fact.status === "proposed" && (
+          <Notice kind="warning">
+            <strong>Proposed Version:</strong> This fact was modified or proposed. A Compliance Reviewer must review the changes below and approve it before it can be used as active approved evidence.
+          </Notice>
+        )}
+
+        {comparison && comparison.is_material_change && comparison.previous_approved_snapshot && (
+          <div className="rounded-xl border border-signal-border bg-signal-wash/40 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-signal-dark">Version Comparison (v{fact.version} Proposed vs v{fact.version - 1} Approved)</h4>
+              {comparison.affected_content_count > 0 && (
+                <span className="text-[11px] font-bold text-state-expired bg-sheet px-2 py-0.5 rounded border border-rule">
+                  {comparison.affected_content_count} content assets impacted
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3 bg-sheet rounded-lg border border-rule space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Previous Approved Value</span>
+                <p className="font-semibold text-ink line-through opacity-70">
+                  {String(comparison.previous_approved_snapshot.value ?? "")} {String(comparison.previous_approved_snapshot.unit ?? "")}
+                </p>
+              </div>
+              <div className="p-3 bg-sheet rounded-lg border border-signal-border space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-signal-dark">Proposed New Value</span>
+                <p className="font-bold text-signal-dark">
+                  {fact.value} {fact.unit ?? ""}
+                </p>
+              </div>
+            </div>
+            {comparison.change_reason && (
+              <p className="text-xs text-ink-soft italic">
+                Reason given: &ldquo;{comparison.change_reason}&rdquo; {comparison.proposed_by ? `(by ${comparison.proposed_by})` : ""}
+              </p>
+            )}
+          </div>
+        )}
 
         {fact.warnings.length > 0 && (
           <div className="space-y-2">
@@ -67,19 +120,19 @@ export function FactDrawer({ fact, actor, onClose, onEdit, onChanged }: {
         )}
 
         <section aria-label="Status" className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Lifecycle Actions</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Reviewer Governance Actions</h3>
           {error && <div className="mb-3"><Notice kind="error">{error}</Notice></div>}
           {pending ? (
             <form onSubmit={confirm} className="space-y-3 border border-rule rounded-xl bg-paper/50 p-4">
               <p className="font-bold text-sm text-ink">{ACTIONS[fact.status].find((a) => a.to === pending)?.label}</p>
               <div>
                 <label className="block text-xs font-semibold text-ink mb-1" htmlFor="status-reason">
-                  Reason{NEEDS_REASON.includes(pending) ? " *" : " (optional)"}
+                  {pending === "active" ? "Approval Notes (optional)" : "Reason *"}
                 </label>
-                <input id="status-reason" className="input text-xs" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={1000} placeholder="Why is this change being made?" />
+                <input id="status-reason" className="input text-xs" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={1000} placeholder={pending === "active" ? "Reviewer justification or notes" : "Why is this proposal being rejected?"} />
               </div>
               <div className="flex gap-2 pt-1">
-                <button className="btn btn-primary text-xs" disabled={busy}>{busy ? "Saving..." : "Confirm"}</button>
+                <button className="btn btn-primary text-xs" disabled={busy}>{busy ? "Saving..." : "Confirm Decision"}</button>
                 <button type="button" className="btn btn-secondary text-xs" onClick={() => { setPending(null); setError(null); }}>Cancel</button>
               </div>
             </form>
@@ -121,7 +174,7 @@ export function FactDrawer({ fact, actor, onClose, onEdit, onChanged }: {
         </section>
 
         <section aria-label="History" className="space-y-3">
-          <h3 className="text-sm font-serif font-bold text-ink">Version Ledger</h3>
+          <h3 className="text-sm font-serif font-bold text-ink">Version Ledger & Decision Audit</h3>
           {history.loading && <Loading label="Loading history" />}
           {history.error && <Notice kind="error">{errorMessage(history.error)}</Notice>}
           <ol className="divide-y divide-rule border border-rule rounded-xl bg-sheet overflow-hidden">

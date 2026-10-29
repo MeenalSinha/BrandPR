@@ -1,0 +1,30 @@
+{
+  "item": {
+    "id": "F13",
+    "feature": "Content correction through new revisions",
+    "status": "PASS",
+    "liveTest": "Created revision 2 for content dabeb3e4-9091-472f-9260-9708f71a721c. Verified new hash (39be5ee456137cc9dac833222ab9d687e25186111bac333683b98177184b09b1) and immutability of revision 1.",
+    "evidence": "api-results/F13.json",
+    "finding": "Content corrections create immutable new revisions in draft status; prior revisions remain byte-for-byte intact."
+  },
+  "details": {
+    "rev2": {
+      "id": "afd7e9b0-bdf0-4b11-981f-2a9f9999c2af",
+      "brand_id": "a6cfc5bc-334b-401d-9def-120ca1206ae0",
+      "asset_id": "726911c1-c04a-4f94-9f0a-9d8743ff8376",
+      "revision_number": 2,
+      "parent_submission_id": "dabeb3e4-9091-472f-9260-9708f71a721c",
+      "workflow_status": "draft",
+      "is_latest": true,
+      "change_note": null,
+      "title": "Summer Campaign Landing Page",
+      "content": "Summer Campaign: Battery life is up to 12 hours under specified test conditions.",
+      "content_hash": "39be5ee456137cc9dac833222ab9d687e25186111bac333683b98177184b09b1",
+      "submitted_by": "Morgan Lead",
+      "created_at": "2026-10-29T06:53:49.408687Z",
+      "updated_at": "2026-10-29T06:53:49.408687Z",
+      "review_count": 0,
+      "latest_review": null
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import type {
   ApiErrorDetail, Brand, DocumentSection, Fact, FactCreateInput, FactRevision, FactStatusInput, FactSummary,
-  FactUpdateInput, Health, Page, SourceDocument, TableData,
+  FactUpdateInput, FactApprovalDecision, FactComparison, Health, Page, SourceDocument, TableData,
   ContentCreateInput, ContentItem, ContentSummary, Finding, ReviewRun,
   Impact, ImpactDetail, ImpactHistory, ImpactResolution, ImpactSummary, ActorRole,
   DecisionInput, FindingDetail, RevisionCreateInput, RevisionHistory, Suggestion, Workflow,
@@ -146,6 +146,12 @@ export const api = {
   getFact: (id: string) => request<Fact>(`/facts/${id}`),
   updateFact: (id: string, data: FactUpdateInput) => request<Fact>(`/facts/${id}`, json("PATCH", data)),
   setFactStatus: (id: string, data: FactStatusInput) => request<Fact>(`/facts/${id}/status`, json("PATCH", data)),
+  approveFact: (id: string, data: { approval_notes?: string; expected_version?: number } = {}) =>
+    request<Fact>(`/facts/${id}/approve`, { ...json("POST", data), headers: actorHeaders() }),
+  rejectFact: (id: string, data: { rejection_reason: string; expected_version?: number }) =>
+    request<Fact>(`/facts/${id}/reject`, { ...json("POST", data), headers: actorHeaders() }),
+  getFactComparison: (id: string) => request<FactComparison>(`/facts/${id}/comparison`),
+  getFactDecisions: (id: string) => request<FactApprovalDecision[]>(`/facts/${id}/decisions`),
   factRevisions: (id: string) => request<FactRevision[]>(`/facts/${id}/revisions`),
 
   listContent: (brandId: string) => request<Page<ContentSummary>>(`/brands/${brandId}/content?limit=50`),

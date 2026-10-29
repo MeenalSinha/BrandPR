@@ -1,0 +1,11 @@
+{
+  "item": {
+    "id": "F11",
+    "feature": "Expired-fact detection",
+    "status": "FAIL",
+    "liveTest": "Check expiry",
+    "evidence": "api-results/F11.json",
+    "finding": "State: undefined"
+  },
+  "details": {}
+}

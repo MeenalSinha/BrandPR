@@ -1,0 +1,11 @@
+{
+  "item": {
+    "id": "F12",
+    "feature": "Fact-change history and audit trail",
+    "status": "FAIL",
+    "liveTest": "Inspect impact detail",
+    "evidence": "api-results/F12.json",
+    "finding": "Cannot read properties of undefined (reading 'id')"
+  },
+  "details": {}
+}

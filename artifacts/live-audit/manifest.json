@@ -1,0 +1,12 @@
+{
+  "audit_run_id": "LIVE_AUDIT_20261029_1793256273611",
+  "timestamp": "2026-10-29T06:44:43.246Z",
+  "target_frontend": "https://brandpr-frontend-1009482348804.asia-south1.run.app",
+  "target_backend": "https://brandpr-backend-1009482348804.asia-south1.run.app",
+  "total_features_tested": 27,
+  "passed": 16,
+  "failed": 11,
+  "partial": 0,
+  "blocked": 0,
+  "integration_passed": false
+}
