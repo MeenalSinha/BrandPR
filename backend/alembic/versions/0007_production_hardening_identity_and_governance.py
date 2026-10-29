@@ -49,8 +49,8 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id', name=op.f('pk_brand_memberships')),
         sa.UniqueConstraint('user_id', 'brand_id', name=op.f('uq_brand_memberships_user_brand'))
     )
-    op.create_index('ix_brand_memberships_brand_id', 'brand_id', ['brand_id'], unique=False)
-    op.create_index('ix_brand_memberships_user_id', 'brand_id', ['user_id'], unique=False)
+    op.create_index('ix_brand_memberships_brand_id', 'brand_memberships', ['brand_id'], unique=False)
+    op.create_index('ix_brand_memberships_user_id', 'brand_memberships', ['user_id'], unique=False)
 
     # 3. membership_audit_logs
     op.create_table(
@@ -90,3 +90,4 @@ def downgrade() -> None:
     op.drop_table('membership_audit_logs')
     op.drop_table('brand_memberships')
     op.drop_table('users')
+

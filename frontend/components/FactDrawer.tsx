@@ -132,7 +132,7 @@ export function FactDrawer({ fact, actor, onClose, onEdit, onChanged }: {
                 <input id="status-reason" className="input text-xs" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={1000} placeholder={pending === "active" ? "Reviewer justification or notes" : "Why is this proposal being rejected?"} />
               </div>
               <div className="flex gap-2 pt-1">
-                <button className="btn btn-primary text-xs" disabled={busy}>{busy ? "Saving..." : "Confirm Decision"}</button>
+                <button className="btn btn-primary text-xs" disabled={busy}>{busy ? "Saving..." : "Confirm"}</button>
                 <button type="button" className="btn btn-secondary text-xs" onClick={() => { setPending(null); setError(null); }}>Cancel</button>
               </div>
             </form>

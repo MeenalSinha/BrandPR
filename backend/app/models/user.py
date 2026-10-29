@@ -77,3 +77,4 @@ class MembershipAuditLog(Base):
     role: Mapped[str] = mapped_column(String(50), nullable=False)
     performed_by: Mapped[str] = mapped_column(String(200), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+

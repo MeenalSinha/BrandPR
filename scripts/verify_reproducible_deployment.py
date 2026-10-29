@@ -14,8 +14,13 @@ import sys
 import time
 import uuid
 
-# Ensure backend directory is in sys.path
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend"))
+# Ensure backend and its virtualenv site-packages are in sys.path
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_BACKEND = os.path.join(_ROOT, "backend")
+_SITE = os.path.join(_BACKEND, ".venv", "Lib", "site-packages")
+for _p in (_BACKEND, _SITE):
+    if os.path.exists(_p) and _p not in sys.path:
+        sys.path.insert(0, _p)
 
 # Set test environment if running locally
 os.environ.setdefault("APP_ENV", "test")
@@ -32,7 +37,7 @@ def run_verification():
     # 1. Config Check
     print("[1/6] Validating application configuration...")
     try:
-        from app.core.config import get_settings
+        from app.core.config import get_settings  # type: ignore[import-untyped,missing-import]
         settings = get_settings()
         print(f"  OK: Environment='{settings.app_env}', DB URL configured, JWT secret set.")
     except Exception as e:
@@ -42,7 +47,7 @@ def run_verification():
     # 2. Managed Identity & Auth Engine
     print("[2/6] Verifying managed identity & authentication engine...")
     try:
-        from app.core.auth import hash_password, verify_password, create_access_token, decode_access_token
+        from app.core.auth import hash_password, verify_password, create_access_token, decode_access_token  # type: ignore[import-untyped,missing-import]
         # Password hashing
         pw = "TestSecurePassword123!"
         hashed = hash_password(pw)
@@ -62,8 +67,8 @@ def run_verification():
     # 3. Database & Migration Schema
     print("[3/6] Verifying database connectivity and core tables...")
     try:
-        from app.db.session import get_engine
-        from sqlalchemy import text
+        from app.db.session import get_engine  # type: ignore[import-untyped,missing-import]
+        from sqlalchemy import text  # type: ignore[import-untyped,missing-import]
         engine = get_engine()
         with engine.connect() as conn:
             ver = conn.execute(text("SELECT 1;")).scalar()
@@ -75,7 +80,7 @@ def run_verification():
     # 4. ProofGraph Review Engine Logic
     print("[4/6] Verifying deterministic ProofGraph verification engine...")
     try:
-        from app.services.review.claims import extract_deterministic
+        from app.services.review.claims import extract_deterministic  # type: ignore[import-untyped,missing-import]
         sample_copy = "The device features 18 hours battery life and 25% faster processing."
         claims = extract_deterministic(sample_copy)
         assert len(claims) >= 1, f"Expected claims extracted, got {len(claims)}"
@@ -87,7 +92,7 @@ def run_verification():
     # 5. Guideline Lint Engine Logic
     print("[5/6] Verifying Guideline Lint rule analysis...")
     try:
-        from app.services.guidelines import VAGUE_TERMS
+        from app.services.guidelines import VAGUE_TERMS  # type: ignore[import-untyped,missing-import]
         rule_text = "Never make unbeatable or fastest claims without benchmark proof."
         detected = [term for term in VAGUE_TERMS if term in rule_text.lower()]
         print(f"  OK: Guideline lint vocabulary loaded ({len(VAGUE_TERMS)} rules, {len(detected)} detected in sample).")
@@ -98,7 +103,7 @@ def run_verification():
     # 6. Campaign Consistency Engine
     print("[6/6] Verifying Campaign Auditor contradiction logic...")
     try:
-        from app.services.campaign_audit import _extract_metric_numbers
+        from app.services.campaign_audit import _extract_metric_numbers  # type: ignore[import-untyped,missing-import]
         nums1 = _extract_metric_numbers("18 hours battery life")
         nums2 = _extract_metric_numbers("24 hours battery life")
         assert nums1 != nums2, "Metric numbers should differ"

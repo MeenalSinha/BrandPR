@@ -113,9 +113,11 @@ def register(data: RegisterRequest, db: DbSession) -> TokenResponse:
     db.add(new_user)
     db.flush()
 
+    # Public self-registration always assigns creator role to prevent privilege escalation
+    assigned_role = "creator"
     brand_ids = ["*"]
     if data.brand_id:
-        membership = BrandMembership(user_id=new_user.id, brand_id=data.brand_id, role=data.role)
+        membership = BrandMembership(user_id=new_user.id, brand_id=data.brand_id, role=assigned_role)
         db.add(membership)
         brand_ids = [str(data.brand_id)]
 
@@ -127,7 +129,7 @@ def register(data: RegisterRequest, db: DbSession) -> TokenResponse:
             "sub": str(new_user.id),
             "name": new_user.name,
             "email": new_user.email,
-            "role": data.role,
+            "role": assigned_role,
             "brand_ids": brand_ids,
         }
     )
@@ -137,7 +139,7 @@ def register(data: RegisterRequest, db: DbSession) -> TokenResponse:
             id=str(new_user.id),
             name=new_user.name,
             email=new_user.email,
-            role=data.role,
+            role=assigned_role,
             brand_ids=brand_ids,
         ),
     )

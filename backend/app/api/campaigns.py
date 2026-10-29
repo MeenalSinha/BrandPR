@@ -111,7 +111,12 @@ def get_campaign(campaign_id: uuid.UUID, db: DbSession, actor: OptionalActor = N
     response_model=CampaignOut,
     summary="Update campaign metadata",
 )
-def update_campaign(campaign_id: uuid.UUID, data: CampaignUpdate, db: DbSession, actor: OptionalActor):
+def update_campaign(campaign_id: uuid.UUID, data: CampaignUpdate, db: DbSession, actor: OptionalActor = None):
+    c_existing = camp_svc.get_campaign(db, campaign_id)
+    if not c_existing:
+        raise camp_svc.CampaignError("campaign_not_found", "Campaign not found", 404)
+    verify_brand_access(c_existing.brand_id, actor)
+
     actor_name = actor.name if actor else None
     c = camp_svc.update_campaign(db, campaign_id, data, actor_name=actor_name)
     assets = camp_svc.list_campaign_assets(db, c.id)
@@ -147,7 +152,12 @@ def update_campaign(campaign_id: uuid.UUID, data: CampaignUpdate, db: DbSession,
     status_code=status.HTTP_201_CREATED,
     summary="Add an asset to the campaign",
 )
-def add_campaign_asset(campaign_id: uuid.UUID, data: CampaignAssetAdd, db: DbSession, actor: OptionalActor):
+def add_campaign_asset(campaign_id: uuid.UUID, data: CampaignAssetAdd, db: DbSession, actor: OptionalActor = None):
+    c = camp_svc.get_campaign(db, campaign_id)
+    if not c:
+        raise camp_svc.CampaignError("campaign_not_found", "Campaign not found", 404)
+    verify_brand_access(c.brand_id, actor)
+
     actor_name = actor.name if actor else None
     item = camp_svc.add_campaign_asset(db, campaign_id, data, actor_name=actor_name)
     # Fetch full view
@@ -163,7 +173,12 @@ def add_campaign_asset(campaign_id: uuid.UUID, data: CampaignAssetAdd, db: DbSes
     response_model=list[CampaignAssetOut],
     summary="List all assets in a campaign",
 )
-def list_campaign_assets(campaign_id: uuid.UUID, db: DbSession):
+def list_campaign_assets(campaign_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    c = camp_svc.get_campaign(db, campaign_id)
+    if not c:
+        raise camp_svc.CampaignError("campaign_not_found", "Campaign not found", 404)
+    verify_brand_access(c.brand_id, actor)
+
     assets = camp_svc.list_campaign_assets(db, campaign_id)
     return [CampaignAssetOut.model_validate(a) for a in assets]
 
@@ -173,7 +188,12 @@ def list_campaign_assets(campaign_id: uuid.UUID, db: DbSession):
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Remove an asset from a campaign",
 )
-def remove_campaign_asset(campaign_id: uuid.UUID, asset_id: uuid.UUID, db: DbSession, actor: OptionalActor):
+def remove_campaign_asset(campaign_id: uuid.UUID, asset_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    c = camp_svc.get_campaign(db, campaign_id)
+    if not c:
+        raise camp_svc.CampaignError("campaign_not_found", "Campaign not found", 404)
+    verify_brand_access(c.brand_id, actor)
+
     actor_name = actor.name if actor else None
     camp_svc.remove_campaign_asset(db, campaign_id, asset_id, actor_name=actor_name)
     return None
@@ -185,7 +205,12 @@ def remove_campaign_asset(campaign_id: uuid.UUID, asset_id: uuid.UUID, db: DbSes
     status_code=status.HTTP_201_CREATED,
     summary="Run a full consistency and readiness audit on the campaign",
 )
-def run_campaign_audit(campaign_id: uuid.UUID, db: DbSession, actor: OptionalActor):
+def run_campaign_audit(campaign_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    c = camp_svc.get_campaign(db, campaign_id)
+    if not c:
+        raise camp_svc.CampaignError("campaign_not_found", "Campaign not found", 404)
+    verify_brand_access(c.brand_id, actor)
+
     actor_name = actor.name if actor else None
     audit = audit_svc.run_campaign_audit(db, campaign_id, actor_name=actor_name)
     audit_data = audit_svc.get_campaign_audit(db, audit.id)
@@ -197,7 +222,12 @@ def run_campaign_audit(campaign_id: uuid.UUID, db: DbSession, actor: OptionalAct
     response_model=list[CampaignAuditOut],
     summary="List historical audits for a campaign",
 )
-def list_campaign_audits(campaign_id: uuid.UUID, db: DbSession):
+def list_campaign_audits(campaign_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    c = camp_svc.get_campaign(db, campaign_id)
+    if not c:
+        raise camp_svc.CampaignError("campaign_not_found", "Campaign not found", 404)
+    verify_brand_access(c.brand_id, actor)
+
     audits = audit_svc.list_campaign_audits(db, campaign_id)
     return [CampaignAuditOut.model_validate(a) for a in audits]
 
@@ -207,10 +237,13 @@ def list_campaign_audits(campaign_id: uuid.UUID, db: DbSession):
     response_model=CampaignAuditOut,
     summary="Get an audit with its full findings and evidence links",
 )
-def get_campaign_audit(audit_id: uuid.UUID, db: DbSession):
+def get_campaign_audit(audit_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
     audit_data = audit_svc.get_campaign_audit(db, audit_id)
     if not audit_data:
         raise camp_svc.CampaignError("audit_not_found", "Audit not found", 404)
+    c = camp_svc.get_campaign(db, audit_data["campaign_id"])
+    if c:
+        verify_brand_access(c.brand_id, actor)
     return CampaignAuditOut.model_validate(audit_data)
 
 
@@ -219,7 +252,12 @@ def get_campaign_audit(audit_id: uuid.UUID, db: DbSession):
     response_model=AuditComparisonOut,
     summary="Compare findings between two campaign audits",
 )
-def compare_campaign_audits(audit_id: uuid.UUID, previous_audit_id: uuid.UUID, db: DbSession):
+def compare_campaign_audits(audit_id: uuid.UUID, previous_audit_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    audit_data = audit_svc.get_campaign_audit(db, audit_id)
+    if audit_data:
+        c = camp_svc.get_campaign(db, audit_data["campaign_id"])
+        if c:
+            verify_brand_access(c.brand_id, actor)
     return audit_svc.compare_campaign_audits(db, audit_id, previous_audit_id)
 
 
@@ -228,7 +266,11 @@ def compare_campaign_audits(audit_id: uuid.UUID, previous_audit_id: uuid.UUID, d
     response_model=ReleaseEvaluationOut,
     summary="Evaluate release readiness for a campaign",
 )
-def get_release_evaluation(campaign_id: uuid.UUID, db: DbSession):
+def get_release_evaluation(campaign_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    c = camp_svc.get_campaign(db, campaign_id)
+    if not c:
+        raise camp_svc.CampaignError("campaign_not_found", "Campaign not found", 404)
+    verify_brand_access(c.brand_id, actor)
     return audit_svc.evaluate_release_readiness(db, campaign_id)
 
 
@@ -237,7 +279,11 @@ def get_release_evaluation(campaign_id: uuid.UUID, db: DbSession):
     response_model=ReleaseEvaluationOut,
     summary="Evaluate release readiness for a campaign (POST support)",
 )
-def post_release_evaluation(campaign_id: uuid.UUID, db: DbSession):
+def post_release_evaluation(campaign_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    c = camp_svc.get_campaign(db, campaign_id)
+    if not c:
+        raise camp_svc.CampaignError("campaign_not_found", "Campaign not found", 404)
+    verify_brand_access(c.brand_id, actor)
     return audit_svc.evaluate_release_readiness(db, campaign_id)
 
 
@@ -253,6 +299,11 @@ def release_campaign(
     db: DbSession,
     actor: ReviewerActor,
 ):
+    c = camp_svc.get_campaign(db, campaign_id)
+    if not c:
+        raise camp_svc.CampaignError("campaign_not_found", "Campaign not found", 404)
+    verify_brand_access(c.brand_id, actor)
+
     decision = audit_svc.release_campaign(
         db,
         campaign_id,

@@ -99,3 +99,4 @@ jobs:
       - name: Validate Docker Compose specification
         run: |
           docker compose config --quiet
+

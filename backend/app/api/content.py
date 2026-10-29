@@ -25,8 +25,10 @@ def list_content(brand_id: uuid.UUID, db: DbSession, limit: Limit = 50, offset: 
 
 
 @router.get("/content/{content_id}", response_model=ContentRead, responses=ERROR_RESPONSES, summary="Get submitted content with its saved text")
-def get_content(content_id: uuid.UUID, db: DbSession):
-    return svc.content_read(db, svc.get_content(db, content_id))
+def get_content(content_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    content = svc.get_content(db, content_id)
+    verify_brand_access(content.brand_id, actor)
+    return svc.content_read(db, content)
 
 
 @router.post(
@@ -35,12 +37,15 @@ def get_content(content_id: uuid.UUID, db: DbSession):
     description="Runs synchronously and records a new review run every time. The response is 201 even when the run's `status` is `failed`: "
                 "always check `status`. `completed_limited` means only deterministic rules ran (no AI provider configured).",
 )
-def create_review(content_id: uuid.UUID, db: DbSession, provider=Depends(get_review_provider), data: ReviewCreate | None = None):
+def create_review(content_id: uuid.UUID, db: DbSession, provider=Depends(get_review_provider), data: ReviewCreate | None = None, actor: OptionalActor = None):
     content = svc.get_content(db, content_id)
+    verify_brand_access(content.brand_id, actor)
     run = pipeline.run_review(db, content, provider, data.requested_by if data else None)
     return svc.run_read(db, run, include_findings=True)
 
 
 @router.get("/content/{content_id}/reviews", response_model=list[ReviewRunRead], responses=ERROR_RESPONSES, summary="Review history for content, newest first")
-def list_reviews(content_id: uuid.UUID, db: DbSession):
+def list_reviews(content_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    content = svc.get_content(db, content_id)
+    verify_brand_access(content.brand_id, actor)
     return svc.list_runs(db, content_id)

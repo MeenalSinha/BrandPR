@@ -49,32 +49,40 @@ def upload_document(
 
 
 @router.get("/documents/{document_id}", response_model=DocumentRead, responses=ERROR_RESPONSES, summary="Get document metadata")
-def get_document(document_id: uuid.UUID, db: DbSession):
-    return svc.to_read(db, svc.get_document(db, document_id))
+def get_document(document_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    doc = svc.get_document(db, document_id)
+    verify_brand_access(doc.brand_id, actor)
+    return svc.to_read(db, doc)
 
 
 @router.get("/documents/{document_id}/sections", response_model=Page[SectionRead], responses=ERROR_RESPONSES, summary="List extracted sections with page references")
-def list_sections(document_id: uuid.UUID, db: DbSession, page_number: Annotated[int | None, Query(ge=1)] = None, limit: Limit = 200, offset: Offset = 0):
+def list_sections(document_id: uuid.UUID, db: DbSession, page_number: Annotated[int | None, Query(ge=1)] = None, limit: Limit = 200, offset: Offset = 0, actor: OptionalActor = None):
+    doc = svc.get_document(db, document_id)
+    verify_brand_access(doc.brand_id, actor)
     rows, total = svc.list_sections(db, document_id, page_number=page_number, limit=limit, offset=offset)
     return Page(items=[SectionRead.model_validate(r, from_attributes=True) for r in rows], total=total, limit=limit, offset=offset)
 
 
 @router.get("/documents/{document_id}/text", response_model=DocumentTextRead, responses=ERROR_RESPONSES, summary="Full extracted text")
-def get_text(document_id: uuid.UUID, db: DbSession):
+def get_text(document_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
     doc = svc.get_document(db, document_id)
+    verify_brand_access(doc.brand_id, actor)
     if doc.processing_status != "processed":
         raise ConflictError("The document has no extracted text because processing did not succeed.", code="not_processed")
     return DocumentTextRead(document_id=doc.id, title=doc.title, text=doc.extracted_text or "")
 
 
 @router.get("/documents/{document_id}/table", response_model=TableRead, responses=ERROR_RESPONSES, summary="CSV headers and rows")
-def get_table(document_id: uuid.UUID, db: DbSession, limit: Limit = 100, offset: Offset = 0):
+def get_table(document_id: uuid.UUID, db: DbSession, limit: Limit = 100, offset: Offset = 0, actor: OptionalActor = None):
+    doc = svc.get_document(db, document_id)
+    verify_brand_access(doc.brand_id, actor)
     return svc.table_view(db, document_id, limit=limit, offset=offset)
 
 
 @router.get("/documents/{document_id}/file", responses=ERROR_RESPONSES, summary="Download the original file")
-def download_file(document_id: uuid.UUID, db: DbSession, inline: bool = False):
+def download_file(document_id: uuid.UUID, db: DbSession, inline: bool = False, actor: OptionalActor = None):
     doc = svc.get_document(db, document_id)
+    verify_brand_access(doc.brand_id, actor)
     if not doc.storage_path:
         raise NotFoundError("The original file is not available.")
     disposition = "inline" if inline and doc.source_type == "pdf" else "attachment"
@@ -105,11 +113,15 @@ def download_file(document_id: uuid.UUID, db: DbSession, inline: bool = False):
 
 
 @router.post("/documents/{document_id}/archive", response_model=DocumentRead, responses=ERROR_RESPONSES, summary="Archive a document")
-def archive_document(document_id: uuid.UUID, db: DbSession):
+def archive_document(document_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    doc = svc.get_document(db, document_id)
+    verify_brand_access(doc.brand_id, actor)
     return svc.to_read(db, svc.archive_document(db, document_id))
 
 
 @router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT, responses=ERROR_RESPONSES, summary="Delete an unreferenced document")
-def delete_document(document_id: uuid.UUID, db: DbSession):
+def delete_document(document_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    doc = svc.get_document(db, document_id)
+    verify_brand_access(doc.brand_id, actor)
     svc.delete_document(db, document_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

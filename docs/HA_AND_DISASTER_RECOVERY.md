@@ -93,3 +93,4 @@ gcloud storage buckets update gs://brandpr-documents-512618 \
   --lifecycle-file=infrastructure/gcs_resilience.json \
   --versioning
 ```
+

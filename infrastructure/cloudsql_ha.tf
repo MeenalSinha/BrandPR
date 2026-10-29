@@ -125,3 +125,4 @@ output "connection_name" {
   value       = google_sql_database_instance.brandpr_ha.connection_name
   description = "Cloud SQL Connection Name for Cloud Run service integration"
 }
+

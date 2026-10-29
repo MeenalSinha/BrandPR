@@ -11,7 +11,7 @@ load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 # Environment must be set before the application modules are imported.
 os.environ["APP_ENV"] = "test"
 os.environ["DATABASE_URL"] = os.environ.get(
-    "TEST_DATABASE_URL", "postgresql+psycopg://brandpr:brandpr_dev_password@localhost:5432/brandpr_test"
+    "TEST_DATABASE_URL", "postgresql+psycopg://brandpr:brandpr_dev_password@localhost:5433/brandpr_test"
 )
 os.environ["STORAGE_DIR"] = tempfile.mkdtemp(prefix="brandpr-test-storage-")
 os.environ["MAX_UPLOAD_BYTES"] = str(1024 * 1024)
@@ -31,7 +31,7 @@ from sqlalchemy import create_engine, text  # noqa: E402
 from app.main import create_app  # noqa: E402
 
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TABLES = "campaign_release_decisions, campaign_audit_findings, campaign_audits, campaign_assets, campaigns, policy_simulation_results, policy_simulations, guideline_lint_results, guideline_rule_versions, guideline_rules, fact_change_impact_resolutions, risk_overrides, revision_corrections, workflow_events, content_assets, fact_change_impact_findings, fact_change_impacts, finding_evidence, review_findings, review_runs, content_submissions, fact_revisions, approved_facts, document_sections, source_documents, brands"
+TABLES = "fact_approval_decisions, membership_audit_logs, brand_memberships, users, campaign_release_decisions, campaign_audit_findings, campaign_audits, campaign_assets, campaigns, policy_simulation_results, policy_simulations, guideline_lint_results, guideline_rule_versions, guideline_rules, fact_change_impact_resolutions, risk_overrides, revision_corrections, workflow_events, content_assets, fact_change_impact_findings, fact_change_impacts, finding_evidence, review_findings, review_runs, content_submissions, fact_revisions, approved_facts, document_sections, source_documents, brands"
 
 
 def alembic_config() -> Config:

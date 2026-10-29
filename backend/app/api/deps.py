@@ -24,6 +24,7 @@ def get_review_provider():
 
 # --------------------------------------------------------------------- authenticated identity
 ACTOR_ROLES = ("creator", "reviewer", "admin")
+DEMO_ROLES = ("creator", "reviewer")
 
 
 @dataclass(frozen=True)
@@ -101,7 +102,7 @@ def get_actor(
     role = (x_actor_role or "").strip().lower()
     if not name or not role:
         raise ActorRequired("This action needs an actor. Send Authorization: Bearer <token> or demo identity headers.")
-    if role not in ACTOR_ROLES:
+    if role not in DEMO_ROLES:
         raise ValidationFailed("Unknown role.", details=[field_error("X-Actor-Role", "Must be 'creator' or 'reviewer'.")])
     if len(name) > 200:
         raise ValidationFailed("The actor name is too long.", details=[field_error("X-Actor-Name", "At most 200 characters.")])

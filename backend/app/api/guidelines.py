@@ -66,6 +66,7 @@ def extract_guideline_rules(
     actor: CurrentActor,
     db: DbSession,
 ):
+    verify_brand_access(brand_id, actor)
     extracted = svc_g.extract_rules_from_document(db, brand_id, data.target_document_id, actor_name=actor.name)
     return GuidelineExtractResponse(
         extracted_rules=extracted,
@@ -80,8 +81,10 @@ def extract_guideline_rules(
     responses=ERROR_RESPONSES,
     summary="Get a guideline rule by ID",
 )
-def get_guideline_rule(rule_id: uuid.UUID, db: DbSession):
-    return svc_g.get_rule(db, rule_id)
+def get_guideline_rule(rule_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    rule = svc_g.get_rule(db, rule_id)
+    verify_brand_access(rule.brand_id, actor)
+    return rule
 
 
 @router.patch(
@@ -96,6 +99,8 @@ def update_guideline_rule(
     actor: CurrentActor,
     db: DbSession,
 ):
+    rule = svc_g.get_rule(db, rule_id)
+    verify_brand_access(rule.brand_id, actor)
     return svc_g.update_rule(db, rule_id, data, actor_name=actor.name, actor_role=actor.role)
 
 
@@ -105,7 +110,9 @@ def update_guideline_rule(
     responses=ERROR_RESPONSES,
     summary="Get version history of a guideline rule",
 )
-def get_rule_versions(rule_id: uuid.UUID, db: DbSession):
+def get_rule_versions(rule_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    rule = svc_g.get_rule(db, rule_id)
+    verify_brand_access(rule.brand_id, actor)
     return svc_g.list_versions(db, rule_id)
 
 
@@ -122,6 +129,8 @@ def propose_rule_version(
     actor: CurrentActor,
     db: DbSession,
 ):
+    rule = svc_g.get_rule(db, rule_id)
+    verify_brand_access(rule.brand_id, actor)
     return svc_g.create_rule_version(db, rule_id, data, actor_name=actor.name, actor_role=actor.role)
 
 
@@ -136,7 +145,9 @@ def run_guideline_lint(
     brand_id: uuid.UUID,
     db: DbSession,
     rule_id: Annotated[uuid.UUID | None, Query(description="Optional specific rule ID to lint")] = None,
+    actor: OptionalActor = None,
 ):
+    verify_brand_access(brand_id, actor)
     return svc_g.lint_brand_rules(db, brand_id, rule_id=rule_id)
 
 
@@ -146,7 +157,8 @@ def run_guideline_lint(
     responses=ERROR_RESPONSES,
     summary="Get latest guideline lint results for a brand",
 )
-def get_guideline_lint_results(brand_id: uuid.UUID, db: DbSession):
+def get_guideline_lint_results(brand_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    verify_brand_access(brand_id, actor)
     lint_resp = svc_g.lint_brand_rules(db, brand_id)
     return lint_resp.issues
 
@@ -165,6 +177,7 @@ def create_policy_simulation(
     actor: CurrentActor,
     db: DbSession,
 ):
+    verify_brand_access(brand_id, actor)
     return svc_s.run_policy_simulation(db, brand_id, data, actor_name=actor.name)
 
 
@@ -179,7 +192,9 @@ def list_policy_simulations(
     db: DbSession,
     limit: Limit = 50,
     offset: Offset = 0,
+    actor: OptionalActor = None,
 ):
+    verify_brand_access(brand_id, actor)
     return svc_s.list_simulations(db, brand_id, limit=limit, offset=offset)
 
 
@@ -189,5 +204,7 @@ def list_policy_simulations(
     responses=ERROR_RESPONSES,
     summary="Get details and evaluated submission outcomes for a policy simulation",
 )
-def get_policy_simulation(simulation_id: uuid.UUID, db: DbSession):
-    return svc_s.get_simulation(db, simulation_id)
+def get_policy_simulation(simulation_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    sim = svc_s.get_simulation(db, simulation_id)
+    verify_brand_access(sim.brand_id, actor)
+    return sim

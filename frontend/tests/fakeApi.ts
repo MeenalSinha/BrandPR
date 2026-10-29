@@ -343,7 +343,7 @@ export class FakeApi {
     const role = headers["x-actor-role"];
     const name = headers["x-actor-name"];
     this.calls.push({ method, url: url.pathname + url.search, body, headers });
-    if (this.failNext) {
+    if (this.failNext && !url.pathname.includes("/auth")) {
       const f = this.failNext;
       this.failNext = null;
       if (f === "network") throw new TypeError("Failed to fetch");
@@ -475,6 +475,20 @@ export class FakeApi {
       const f = this.facts.find((x) => x.id === m![1])!;
       f.status = body.status;
       f.effective_state = body.status === "active" ? "current" : body.status === "expired" ? "expired" : body.status === "retired" ? "retired" : "unapproved";
+      f.version += 1;
+      return this.json(200, f);
+    }
+    if ((m = p.match(/^\/facts\/([^/]+)\/approve$/))) {
+      const f = this.facts.find((x) => x.id === m![1])!;
+      f.status = "active";
+      f.effective_state = "current";
+      f.version += 1;
+      return this.json(200, f);
+    }
+    if ((m = p.match(/^\/facts\/([^/]+)\/reject$/))) {
+      const f = this.facts.find((x) => x.id === m![1])!;
+      f.status = "rejected";
+      f.effective_state = "unapproved";
       f.version += 1;
       return this.json(200, f);
     }

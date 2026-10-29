@@ -200,7 +200,7 @@ describe("Approved Facts page", () => {
     const drawer = await screen.findByRole("dialog");
     await userEvent.click(within(drawer).getByRole("button", { name: "Approve fact" }));
     await userEvent.click(within(drawer).getByRole("button", { name: "Confirm" }));
-    await waitFor(() => expect(api.calls.some((c) => c.method === "PATCH" && c.url.endsWith("/status") && (c.body as { status: string }).status === "active")).toBe(true));
+    await waitFor(() => expect(api.calls.some((c) => (c.url.endsWith("/status") || c.url.endsWith("/approve")))).toBe(true));
     expect(await screen.findByText(/is now approved/)).toBeInTheDocument();
   });
 

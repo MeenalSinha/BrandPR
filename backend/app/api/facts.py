@@ -52,13 +52,17 @@ def create_fact(brand_id: uuid.UUID, data: FactCreate, db: DbSession, actor: Opt
 
 
 @router.get("/facts/{fact_id}", response_model=FactRead, responses=ERROR_RESPONSES, summary="Get a fact with its source")
-def get_fact(fact_id: uuid.UUID, db: DbSession):
-    return svc.to_read(db, svc.get_fact(db, fact_id))
+def get_fact(fact_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    fact = svc.get_fact(db, fact_id)
+    verify_brand_access(fact.brand_id, actor)
+    return svc.to_read(db, fact)
 
 
 @router.patch("/facts/{fact_id}", response_model=FactRead, responses=ERROR_RESPONSES, summary="Edit a fact",
               description="Editing wording, value, qualifications, unit, category or source of an active fact returns it to 'proposed' for re-approval.")
 def update_fact(fact_id: uuid.UUID, data: FactUpdate, db: DbSession, actor: OptionalActor = None):
+    fact = svc.get_fact(db, fact_id)
+    verify_brand_access(fact.brand_id, actor)
     if actor:
         data.actor = actor.name
     return svc.to_read(db, svc.update_fact(db, fact_id, data))
@@ -66,6 +70,8 @@ def update_fact(fact_id: uuid.UUID, data: FactUpdate, db: DbSession, actor: Opti
 
 @router.patch("/facts/{fact_id}/status", response_model=FactRead, responses=ERROR_RESPONSES, summary="Change a fact's approval status")
 def update_status(fact_id: uuid.UUID, data: FactStatusUpdate, db: DbSession, actor: OptionalActor = None):
+    fact = svc.get_fact(db, fact_id)
+    verify_brand_access(fact.brand_id, actor)
     # Enforce role boundary: activating a fact requires Reviewer role
     if data.status == "active":
         if actor is not None and not actor.is_reviewer:
@@ -78,6 +84,8 @@ def update_status(fact_id: uuid.UUID, data: FactStatusUpdate, db: DbSession, act
 @router.post("/facts/{fact_id}/approve", response_model=FactRead, responses=ERROR_RESPONSES, summary="Approve a proposed fact version")
 def approve_fact(fact_id: uuid.UUID, data: FactApprovalInput, db: DbSession, actor: ReviewerActor):
     """Approve a proposed fact version with reviewer notes and auditable decision logging."""
+    fact = svc.get_fact(db, fact_id)
+    verify_brand_access(fact.brand_id, actor)
     reviewer_name = actor.name or data.actor or "Compliance Reviewer"
     reviewer_email = actor.email
     return svc.to_read(db, svc.approve_fact(db, fact_id, data, reviewer_name, reviewer_email))
@@ -86,21 +94,29 @@ def approve_fact(fact_id: uuid.UUID, data: FactApprovalInput, db: DbSession, act
 @router.post("/facts/{fact_id}/reject", response_model=FactRead, responses=ERROR_RESPONSES, summary="Reject a proposed fact version")
 def reject_fact(fact_id: uuid.UUID, data: FactRejectionInput, db: DbSession, actor: ReviewerActor):
     """Reject a proposed fact version with auditable rationale."""
+    fact = svc.get_fact(db, fact_id)
+    verify_brand_access(fact.brand_id, actor)
     reviewer_name = actor.name or data.actor or "Compliance Reviewer"
     reviewer_email = actor.email
     return svc.to_read(db, svc.reject_fact(db, fact_id, data, reviewer_name, reviewer_email))
 
 
 @router.get("/facts/{fact_id}/comparison", response_model=FactComparisonRead, responses=ERROR_RESPONSES, summary="Side-by-side comparison of proposed vs approved versions")
-def compare_fact(fact_id: uuid.UUID, db: DbSession):
+def compare_fact(fact_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    fact = svc.get_fact(db, fact_id)
+    verify_brand_access(fact.brand_id, actor)
     return svc.compare_fact_versions(db, fact_id)
 
 
 @router.get("/facts/{fact_id}/decisions", response_model=list[FactApprovalDecisionRead], responses=ERROR_RESPONSES, summary="Reviewer approval decisions for a fact")
-def list_fact_decisions(fact_id: uuid.UUID, db: DbSession):
+def list_fact_decisions(fact_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    fact = svc.get_fact(db, fact_id)
+    verify_brand_access(fact.brand_id, actor)
     return [FactApprovalDecisionRead.model_validate(d) for d in svc.list_fact_decisions(db, fact_id)]
 
 
 @router.get("/facts/{fact_id}/revisions", response_model=list[FactRevisionRead], responses=ERROR_RESPONSES, summary="Change history for a fact")
-def revisions(fact_id: uuid.UUID, db: DbSession):
+def revisions(fact_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    fact = svc.get_fact(db, fact_id)
+    verify_brand_access(fact.brand_id, actor)
     return svc.list_revisions(db, fact_id)

@@ -10,11 +10,23 @@ import sys
 import time
 import uuid
 
-from sqlalchemy import create_engine, func, select, text
-from sqlalchemy.orm import Session
+# Ensure backend and its virtualenv site-packages are available
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_BACKEND = os.path.join(_ROOT, "backend")
+_SITE = os.path.join(_BACKEND, ".venv", "Lib", "site-packages")
+for _p in (_BACKEND, _SITE):
+    if os.path.exists(_p) and _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from sqlalchemy import create_engine, func, select, text  # type: ignore[import-untyped,missing-import]
+from sqlalchemy.orm import Session  # type: ignore[import-untyped,missing-import]
 
 # List of critical tables that must exist and pass referential integrity
 CRITICAL_TABLES = [
+    "users",
+    "brand_memberships",
+    "membership_audit_logs",
+    "fact_approval_decisions",
     "brands",
     "source_documents",
     "document_sections",
@@ -141,3 +153,4 @@ if __name__ == "__main__":
         db_url = sys.argv[1]
     res = run_drill(db_url)
     sys.exit(0 if res.get("success") else 1)
+

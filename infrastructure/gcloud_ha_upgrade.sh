@@ -52,3 +52,4 @@ gcloud sql backups create \
   --description="Baseline backup prior to regional HA operation"
 
 echo "=== UPGRADE PROCEDURE COMPLETED SUCCESSFULLY ==="
+

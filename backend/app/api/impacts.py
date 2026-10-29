@@ -4,8 +4,11 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 
 from app.api.deps import DbSession, Limit, Offset, OptionalActor, verify_brand_access
+from app.models.fact_change_impact import FactChangeImpact
+from app.core.errors import NotFoundError
 from app.schemas.common import ERROR_RESPONSES, Page
 from app.schemas.impact import ImpactDetail, ImpactRead, ImpactStatus, ImpactSummary, ImpactTrigger
+from app.services import facts as fact_svc
 from app.services import impacts as svc
 
 router = APIRouter(tags=["fact-change-impacts"])
@@ -40,12 +43,18 @@ def impacts_summary(brand_id: uuid.UUID, db: DbSession, actor: OptionalActor = N
 
 @router.get("/facts/{fact_id}/impacts", response_model=Page[ImpactRead], responses=ERROR_RESPONSES,
             summary="Impacts caused by one fact", description=SWEEP_NOTE)
-def fact_impacts(fact_id: uuid.UUID, db: DbSession, limit: Limit = 50, offset: Offset = 0, status: ImpactStatus | None = None, trigger_type: ImpactTrigger | None = None):
+def fact_impacts(fact_id: uuid.UUID, db: DbSession, limit: Limit = 50, offset: Offset = 0, status: ImpactStatus | None = None, trigger_type: ImpactTrigger | None = None, actor: OptionalActor = None):
+    fact = fact_svc.get_fact(db, fact_id)
+    verify_brand_access(fact.brand_id, actor)
     items, total = svc.list_for_fact(db, fact_id, limit=limit, offset=offset, status=status, trigger_type=trigger_type)
     return Page(items=items, total=total, limit=limit, offset=offset)
 
 
 @router.get("/fact-change-impacts/{impact_id}", response_model=ImpactDetail, responses=ERROR_RESPONSES,
             summary="One impact with the historical findings and fact snapshots behind it")
-def get_impact(impact_id: uuid.UUID, db: DbSession):
+def get_impact(impact_id: uuid.UUID, db: DbSession, actor: OptionalActor = None):
+    impact = db.get(FactChangeImpact, impact_id)
+    if impact is None:
+        raise NotFoundError("Impact not found.")
+    verify_brand_access(impact.brand_id, actor)
     return svc.get_impact(db, impact_id)
